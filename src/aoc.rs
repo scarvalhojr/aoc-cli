@@ -72,6 +72,7 @@ fn puzzle_day_year(
 }
 
 pub fn download_input(
+    _session_cookie: &str,
     opt_year: Option<PuzzleYear>,
     opt_day: Option<PuzzleDay>,
     filename: &str,
@@ -86,6 +87,7 @@ pub fn download_input(
 }
 
 pub fn submit_answer(
+    _session_cookie: &str,
     opt_year: Option<PuzzleYear>,
     opt_day: Option<PuzzleDay>,
     part: &str,

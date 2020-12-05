@@ -4,6 +4,11 @@ use aoc::*;
 use clap::{
     crate_description, crate_version, value_t_or_exit, App, Arg, ArgMatches,
 };
+use home::home_dir;
+use std::fs::read_to_string;
+use std::process::exit;
+
+const SESSION_COOKIE_FILE: &str = ".adventofcode.session";
 
 fn main() {
     let args = parse_args();
@@ -18,15 +23,17 @@ fn main() {
         None
     };
 
+    let session_cookie = read_session_cookie();
+
     let result = match args.value_of("command").unwrap() {
         cmd if cmd == "download" || cmd == "d" => {
             let filename = args.value_of("filename").unwrap();
-            download_input(year, day, filename)
+            download_input(&session_cookie, year, day, filename)
         }
         cmd if cmd == "submit" || cmd == "s" => {
             let part = args.value_of("part").unwrap();
             let answer = args.value_of("answer").unwrap();
-            submit_answer(year, day, part, answer)
+            submit_answer(&session_cookie, year, day, part, answer)
         }
         _ => unreachable!(),
     };
@@ -99,4 +106,28 @@ fn parse_args() -> ArgMatches<'static> {
                 .default_value("input"),
         )
         .get_matches()
+}
+
+fn read_session_cookie() -> String {
+    let cookie_file = match home_dir() {
+        Some(dir) => dir.join(SESSION_COOKIE_FILE),
+        None => {
+            eprintln!("error: Failed to find home directory.");
+            exit(2);
+        }
+    };
+
+    match read_to_string(&cookie_file) {
+        Ok(cookie) => {
+            eprintln!("Loaded session cookie from {:?}.", cookie_file);
+            cookie
+        }
+        Err(err) => {
+            eprintln!(
+                "error: Failed to read session cookie from {:?}: {}",
+                cookie_file, err
+            );
+            exit(2);
+        }
+    }
 }
