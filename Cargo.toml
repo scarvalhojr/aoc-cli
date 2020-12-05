@@ -1,0 +1,16 @@
+[package]
+name = "aoc-cli"
+description = "Advent of Code command-line helper tool"
+version = "0.1.0"
+authors = ["Sergio de Carvalho <scarvalhojr@gmail.com>"]
+edition = "2018"
+repository = "https://github.com/scarvalhojr/aoc-cli"
+license = "MIT"
+
+[[bin]]
+name = "aoc"
+path = "src/main.rs"
+
+[dependencies]
+clap = "2.33"
+chrono = "0.4"
