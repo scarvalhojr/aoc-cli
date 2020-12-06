@@ -27,7 +27,7 @@ fn main() {
 
     let result = match args.value_of("command").unwrap() {
         cmd if cmd == "download" || cmd == "d" => {
-            let filename = args.value_of("filename").unwrap();
+            let filename = args.value_of("file").unwrap();
             download_input(&session_cookie, year, day, filename)
         }
         cmd if cmd == "submit" || cmd == "s" => {
@@ -98,11 +98,11 @@ fn parse_args() -> ArgMatches<'static> {
                 .help("Puzzle day [default: last unlocked day (during Advent of Code)]"),
         )
         .arg(
-            Arg::with_name("filename")
+            Arg::with_name("file")
                 .short("f")
-                .long("filename")
+                .long("file")
                 .takes_value(true)
-                .help("File name where to save puzzle input")
+                .help("Save puzzle input to file")
                 .default_value("input"),
         )
         .get_matches()

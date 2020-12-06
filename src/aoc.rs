@@ -1,4 +1,8 @@
 use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
+use reqwest::blocking::Client;
+use reqwest::header::{HeaderMap, HeaderValue, COOKIE};
+use std::fs::OpenOptions;
+use std::io::Write;
 
 pub type PuzzleYear = i32;
 pub type PuzzleDay = u32;
@@ -71,23 +75,48 @@ fn puzzle_day_year(
     Ok((year, day))
 }
 
+fn build_client(session_cookie: &str) -> Result<Client, String> {
+    let cookie_header =
+        HeaderValue::from_str(&format!("session={}", session_cookie.trim()))
+            .map_err(|err| format!("Invalid session cookie: {}", err))?;
+    let mut headers = HeaderMap::new();
+    headers.insert(COOKIE, cookie_header);
+    Client::builder()
+        .default_headers(headers)
+        .build()
+        .map_err(|err| err.to_string())
+}
+
 pub fn download_input(
-    _session_cookie: &str,
+    session_cookie: &str,
     opt_year: Option<PuzzleYear>,
     opt_day: Option<PuzzleDay>,
     filename: &str,
 ) -> Result<(), String> {
     let (year, day) = puzzle_day_year(opt_year, opt_day)?;
 
-    eprintln!(
-        "Downloading input for day {}, {} and saving it to '{}'...",
-        day, year, filename
-    );
+    eprintln!("Downloading input for day {}, {}...", day, year);
+    let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
+    let puzzle_input = build_client(session_cookie)?
+        .get(&url)
+        .send()
+        .and_then(|response| response.error_for_status())
+        .and_then(|response| response.text())
+        .map_err(|err| err.to_string())?;
+
+    eprintln!("Saving puzzle input to '{}'...", filename);
+    OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(filename)
+        .map_err(|err| format!("Failed to create file: {}", err))?
+        .write(puzzle_input.as_bytes())
+        .map_err(|err| format!("Failed to write to file: {}", err))?;
     Ok(())
 }
 
 pub fn submit_answer(
-    _session_cookie: &str,
+    session_cookie: &str,
     opt_year: Option<PuzzleYear>,
     opt_day: Option<PuzzleDay>,
     part: &str,
@@ -95,9 +124,15 @@ pub fn submit_answer(
 ) -> Result<(), String> {
     let (year, day) = puzzle_day_year(opt_year, opt_day)?;
 
-    eprintln!(
-        "Submitting answer '{}' for part {}, day {}, {}...",
-        answer, part, day, year
-    );
+    eprintln!("Submitting answer for part {}, day {}, {}...", part, day, year);
+    let url = format!("https://adventofcode.com/{}/day/{}/answer", year, day);
+    let _response = build_client(session_cookie)?
+        .post(&url)
+        .body(format!("level={}&answer={}", part, answer))
+        .send()
+        .and_then(|response| response.error_for_status())
+        .and_then(|response| response.text())
+        .map_err(|err| err.to_string())?;
+
     Ok(())
 }
