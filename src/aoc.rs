@@ -104,7 +104,7 @@ pub fn download_input(
         .and_then(|response| response.text())
         .map_err(|err| err.to_string())?;
 
-    eprintln!("Saving puzzle input to '{}'...", filename);
+    eprintln!("Saving puzzle input to \"{}\"...", filename);
     OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -124,7 +124,10 @@ pub fn submit_answer(
 ) -> Result<(), String> {
     let (year, day) = puzzle_day_year(opt_year, opt_day)?;
 
-    eprintln!("Submitting answer for part {}, day {}, {}...", part, day, year);
+    eprintln!(
+        "Submitting answer for part {}, day {}, {}...",
+        part, day, year
+    );
     let url = format!("https://adventofcode.com/{}/day/{}/answer", year, day);
     let _response = build_client(session_cookie)?
         .post(&url)

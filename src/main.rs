@@ -74,12 +74,12 @@ fn parse_args() -> ArgMatches<'static> {
             Arg::with_name("part")
                 .possible_values(&["1", "2"])
                 .required_ifs(&[("command", "submit"), ("command", "s")])
-                .help("Puzzle part (required for submit)")
+                .help("Puzzle part (required when submitting answers)")
         )
         .arg(
             Arg::with_name("answer")
                 .required_ifs(&[("command", "submit"), ("command", "s")])
-                .help("Puzzle answer (required for submit")
+                .help("Puzzle answer (required when submitting answers)")
         )
         .arg(
             Arg::with_name("year")
@@ -119,13 +119,17 @@ fn read_session_cookie() -> String {
 
     match read_to_string(&cookie_file) {
         Ok(cookie) => {
-            eprintln!("Loaded session cookie from {:?}.", cookie_file);
+            eprintln!(
+                "Loaded session cookie from \"{}\".",
+                cookie_file.display()
+            );
             cookie
         }
         Err(err) => {
             eprintln!(
-                "error: Failed to read session cookie from {:?}: {}",
-                cookie_file, err
+                "error: Failed to read session cookie from \"{}\": {}",
+                cookie_file.display(),
+                err
             );
             exit(2);
         }
