@@ -1,6 +1,9 @@
 use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
+use html2text::from_read;
+use regex::Regex;
 use reqwest::blocking::Client;
-use reqwest::header::{HeaderMap, HeaderValue, COOKIE};
+use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE};
+use reqwest::redirect::Policy;
 use std::fs::OpenOptions;
 use std::io::Write;
 
@@ -75,14 +78,23 @@ fn puzzle_day_year(
     Ok((year, day))
 }
 
-fn build_client(session_cookie: &str) -> Result<Client, String> {
+fn build_client(
+    session_cookie: &str,
+    content_type: Option<&str>,
+) -> Result<Client, String> {
+    let mut headers = HeaderMap::new();
     let cookie_header =
         HeaderValue::from_str(&format!("session={}", session_cookie.trim()))
             .map_err(|err| format!("Invalid session cookie: {}", err))?;
-    let mut headers = HeaderMap::new();
     headers.insert(COOKIE, cookie_header);
+
+    if let Some(value) = content_type {
+        headers.insert(CONTENT_TYPE, HeaderValue::from_str(value).unwrap());
+    }
+
     Client::builder()
         .default_headers(headers)
+        .redirect(Policy::none())
         .build()
         .map_err(|err| err.to_string())
 }
@@ -97,7 +109,7 @@ pub fn download_input(
 
     eprintln!("Downloading input for day {}, {}...", day, year);
     let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
-    let puzzle_input = build_client(session_cookie)?
+    let puzzle_input = build_client(session_cookie, None)?
         .get(&url)
         .send()
         .and_then(|response| response.error_for_status())
@@ -122,6 +134,11 @@ pub fn submit_answer(
     part: &str,
     answer: &str,
 ) -> Result<(), String> {
+    lazy_static! {
+        static ref REGEX: Regex =
+            Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>").unwrap();
+    }
+
     let (year, day) = puzzle_day_year(opt_year, opt_day)?;
 
     eprintln!(
@@ -129,7 +146,8 @@ pub fn submit_answer(
         part, day, year
     );
     let url = format!("https://adventofcode.com/{}/day/{}/answer", year, day);
-    let _response = build_client(session_cookie)?
+    let content_type = Some("application/x-www-form-urlencoded");
+    let response = build_client(session_cookie, content_type)?
         .post(&url)
         .body(format!("level={}&answer={}", part, answer))
         .send()
@@ -137,5 +155,14 @@ pub fn submit_answer(
         .and_then(|response| response.text())
         .map_err(|err| err.to_string())?;
 
+    let result = REGEX
+        .captures(&response)
+        .ok_or_else(|| "Failed to parse response")?
+        .name("main")
+        .unwrap()
+        .as_str();
+
+    // TODO: find out terminal width
+    println!("\n{}", from_read(result.as_bytes(), 100));
     Ok(())
 }

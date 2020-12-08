@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 mod aoc;
 
 use aoc::*;
@@ -102,7 +105,7 @@ fn parse_args() -> ArgMatches<'static> {
                 .short("f")
                 .long("file")
                 .takes_value(true)
-                .help("Save puzzle input to file")
+                .help("Specify name of file to save puzzle input")
                 .default_value("input"),
         )
         .get_matches()

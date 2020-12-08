@@ -5,7 +5,7 @@
 ## Features
 
 - Download puzzle input and save it to a file.
-- Submit answers and check if they are correct.
+- Submit answers and report if they are correct.
 - Load Advent of Code session cookie from a file.
 - Validate arguments (year, day, part) and check if puzzle is unlocked.
 - If year is not provided, it is assumed to be the current or the last Advent of
@@ -52,7 +52,7 @@ FLAGS:
 
 OPTIONS:
     -d, --day <day>      Puzzle day [default: last unlocked day (during Advent of Code)]
-    -f, --file <file>    Save puzzle input to file [default: input]
+    -f, --file <file>    Specify name of file to save puzzle input [default: input]
     -y, --year <year>    Puzzle year [default: year of current or last Advent of Code]
 
 ARGS:
@@ -84,6 +84,11 @@ Or simply:
 
 Loaded session cookie from "/home/user/.adventofcode.session".
 Submitting answer for part 1, day 5, 2020...
+
+That's the right answer! You are one gold star closer to saving your vacation. [[Continue to Part Two]][1]
+
+[1] /2020/day/5#part2
+
 Done!
 ```
 
