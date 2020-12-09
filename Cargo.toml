@@ -5,6 +5,7 @@ version = "0.1.0"
 authors = ["Sergio de Carvalho <scarvalhojr@gmail.com>"]
 edition = "2018"
 repository = "https://github.com/scarvalhojr/aoc-cli"
+readme = "README.md"
 license = "MIT"
 
 [[bin]]
@@ -16,6 +17,6 @@ chrono = "0.4"
 clap = "2.33"
 home = "0.5"
 html2text = "0.2"
-lazy_static = "1.4"
 regex = "1.4"
 reqwest = { version = "0.10", features = ["blocking"] }
+term_size = "0.3"

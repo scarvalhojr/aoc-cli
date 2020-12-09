@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-
 mod aoc;
 
 use aoc::*;
@@ -38,13 +35,15 @@ fn main() {
             let answer = args.value_of("answer").unwrap();
             submit_answer(&session_cookie, year, day, part, answer)
         }
+        cmd if cmd == "read" || cmd == "r" => {
+            read_puzzle(&session_cookie, year, day)
+        }
         _ => unreachable!(),
     };
 
-    match result {
-        Ok(()) => eprintln!("Done!"),
-        Err(err) => eprintln!("Error: {}", err),
-    };
+    if let Err(err) = result {
+        eprintln!("Error: {}", err);
+    }
 }
 
 fn parse_args() -> ArgMatches<'static> {
@@ -69,7 +68,7 @@ fn parse_args() -> ArgMatches<'static> {
         .about(crate_description!())
         .arg(
             Arg::with_name("command")
-                .possible_values(&["download", "d", "submit", "s"])
+                .possible_values(&["download", "d", "read", "r", "submit", "s"])
                 .required(true)
                 .help("Command to execute")
         )
