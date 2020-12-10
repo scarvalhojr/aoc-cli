@@ -44,21 +44,39 @@ aoc 0.1.0
 Advent of Code command-line helper tool
 
 USAGE:
-    aoc [OPTIONS] <command> [ARGS]
+    aoc [OPTIONS] <COMMAND> [ARGS]
 
 FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
+    -h, --help
+            Prints help information
+
+    -V, --version
+            Prints version information
+
 
 OPTIONS:
-    -d, --day <day>      Puzzle day [default: last unlocked day (during Advent of Code)]
-    -f, --file <file>    Specify name of file to save puzzle input [default: input]
-    -y, --year <year>    Puzzle year [default: year of current or last Advent of Code]
+    -d, --day <DAY>
+            Puzzle day [default: last unlocked day (during Advent of Code)]
+
+    -f, --file <PATH>
+            Path to file where to save puzzle input [default: input]
+
+    -s, --session <PATH>
+            Path to session cookie file [default ~/.adventofcode.session]
+
+    -y, --year <YEAR>
+            Puzzle year [default: year of current or last Advent of Code]
+
 
 ARGS:
-    <command>    Command to execute [possible values: download, d, read, r, submit, s]
-    <part>       Puzzle part (required for submit) [possible values: 1, 2]
-    <answer>     Puzzle answer (required for submit)
+    <COMMAND>
+            Commands are 'read' (or 'r') to read puzzle description, 'download' (or 'd') to download puzzle input, and
+            'submit' (or 's') to submit a puzzle answer. [possible values: download, d, read, r, submit, s]
+    <PART>
+            Puzzle part (required when submitting answers) [possible values: 1, 2]
+
+    <ANSWER>
+            Puzzle answer (required when submitting answers)
 ```
 
 ### Read puzzle description
@@ -147,6 +165,11 @@ Error: Puzzle 25 of 2030 is still locked.
 Submit the answer to a previous year:
 ```
 # aoc s 1 999 -y 2015 -d 1
+```
+
+Specify path to session cookie file:
+```
+# aoc download --session /tmp/.aoc.session
 ```
 
 ## Contribute

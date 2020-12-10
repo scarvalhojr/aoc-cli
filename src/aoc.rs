@@ -160,7 +160,7 @@ pub fn submit_answer(
         .unwrap()
         .as_str();
 
-    let term_width = term_size::dimensions().map(|(w,_)| w).unwrap_or(80);
+    let term_width = term_size::dimensions().map(|(w, _)| w).unwrap_or(80);
     println!("\n{}", from_read(result.as_bytes(), term_width));
     Ok(())
 }
@@ -189,8 +189,7 @@ pub fn read_puzzle(
         .unwrap()
         .as_str();
 
-    let term_width = term_size::dimensions().map(|(w,_)| w).unwrap_or(80);
+    let term_width = term_size::dimensions().map(|(w, _)| w).unwrap_or(80);
     println!("\n{}", from_read(description.as_bytes(), term_width));
     Ok(())
-
 }
