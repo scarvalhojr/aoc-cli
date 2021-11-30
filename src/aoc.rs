@@ -22,7 +22,7 @@ pub fn is_valid_year(year: PuzzleYear) -> bool {
 }
 
 pub fn is_valid_day(day: PuzzleDay) -> bool {
-    day >= FIRST_PUZZLE_DAY && day <= LAST_PUZZLE_DAY
+    (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY).contains(&day)
 }
 
 pub fn is_valid_width(width: ColumnWidth) -> bool {
@@ -161,7 +161,7 @@ pub fn submit_answer(
     let result = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
         .unwrap()
         .captures(&response)
-        .ok_or_else(|| "Failed to parse response")?
+        .ok_or("Failed to parse response")?
         .name("main")
         .unwrap()
         .as_str();
@@ -193,7 +193,7 @@ pub fn read_puzzle(
     let description = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
         .unwrap()
         .captures(&response)
-        .ok_or_else(|| "Failed to parse puzzle description page")?
+        .ok_or("Failed to parse puzzle description page")?
         .name("main")
         .unwrap()
         .as_str();
