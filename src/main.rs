@@ -11,7 +11,7 @@ use std::process::exit;
 
 const SESSION_COOKIE_FILE: &str = ".adventofcode.session";
 
-fn main() {
+fn main() -> Result<(), String> {
     let args = parse_args();
     let year = if args.is_present("year") {
         Some(value_t_or_exit!(args, "year", PuzzleYear))
@@ -26,7 +26,7 @@ fn main() {
 
     let session_cookie = read_session_cookie(args.value_of("session"));
 
-    let result = match args.value_of("command").unwrap() {
+    match args.value_of("command").unwrap() {
         cmd if cmd == "download" || cmd == "d" => {
             let filename = args.value_of("file").unwrap();
             download_input(&session_cookie, year, day, filename)
@@ -40,10 +40,6 @@ fn main() {
             read_puzzle(&session_cookie, year, day)
         }
         _ => unreachable!(),
-    };
-
-    if let Err(err) = result {
-        eprintln!("Error: {}", err);
     }
 }
 
