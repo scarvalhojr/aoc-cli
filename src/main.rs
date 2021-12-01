@@ -26,6 +26,12 @@ fn main() -> Result<(), String> {
 
     let session_cookie = read_session_cookie(args.value_of("session"));
 
+    let width = if args.is_present("width") {
+        Some(value_t_or_exit!(args, "width", ColumnWidth))
+    } else {
+        None
+    };
+
     match args.value_of("command").unwrap() {
         cmd if cmd == "download" || cmd == "d" => {
             let filename = args.value_of("file").unwrap();
@@ -34,10 +40,10 @@ fn main() -> Result<(), String> {
         cmd if cmd == "submit" || cmd == "s" => {
             let part = args.value_of("part").unwrap();
             let answer = args.value_of("answer").unwrap();
-            submit_answer(&session_cookie, year, day, part, answer)
+            submit_answer(&session_cookie, year, day, part, answer, width)
         }
         cmd if cmd == "read" || cmd == "r" => {
-            read_puzzle(&session_cookie, year, day)
+            read_puzzle(&session_cookie, year, day, width)
         }
         _ => unreachable!(),
     }
@@ -56,6 +62,14 @@ fn parse_args() -> ArgMatches<'static> {
         match value.parse() {
             Ok(day) if is_valid_day(day) => Ok(()),
             Ok(_) => Err(String::from("Not an Advent of Code day")),
+            _ => Err(String::from("Invalid number")),
+        }
+    }
+
+    fn width_validator(value: String) -> Result<(), String> {
+        match value.parse() {
+            Ok(width) if is_valid_width(width) => Ok(()),
+            Ok(_) => Err(String::from("Not a valid width")),
             _ => Err(String::from("Invalid number")),
         }
     }
@@ -128,8 +142,19 @@ fn parse_args() -> ArgMatches<'static> {
                 .value_name("PATH")
                 .takes_value(true)
                 .help(
-                    "Path to session cookie file [default \
+                    "Path to session cookie file [default: \
                     ~/.adventofcode.session]",
+                ),
+        )
+        .arg(
+            Arg::with_name("width")
+                .short("w")
+                .long("width")
+                .value_name("WIDTH")
+                .takes_value(true)
+                .validator(width_validator)
+                .help(
+                    "Width at which to wrap output [default: terminal width]",
                 ),
         )
         .get_matches()
