@@ -10,27 +10,30 @@ use std::path::PathBuf;
 use std::process::exit;
 
 const SESSION_COOKIE_FILE: &str = ".adventofcode.session";
+const DEFAULT_COL_WIDTH: usize = 80;
 
 fn main() -> Result<(), String> {
     let args = parse_args();
+
     let year = if args.is_present("year") {
         Some(value_t_or_exit!(args, "year", PuzzleYear))
     } else {
         None
     };
+
     let day = if args.is_present("day") {
         Some(value_t_or_exit!(args, "day", PuzzleDay))
     } else {
         None
     };
 
-    let session_cookie = read_session_cookie(args.value_of("session"));
-
-    let width = if args.is_present("width") {
-        Some(value_t_or_exit!(args, "width", ColumnWidth))
+    let col_width = if args.is_present("width") {
+        value_t_or_exit!(args, "width", usize)
     } else {
-        None
+        term_size::dimensions().map(|(w, _)| w).unwrap_or(DEFAULT_COL_WIDTH)
     };
+
+    let session_cookie = read_session_cookie(args.value_of("session"));
 
     match args.value_of("command").unwrap() {
         cmd if cmd == "download" || cmd == "d" => {
@@ -40,10 +43,10 @@ fn main() -> Result<(), String> {
         cmd if cmd == "submit" || cmd == "s" => {
             let part = args.value_of("part").unwrap();
             let answer = args.value_of("answer").unwrap();
-            submit_answer(&session_cookie, year, day, part, answer, width)
+            submit_answer(&session_cookie, year, day, part, answer, col_width)
         }
         cmd if cmd == "read" || cmd == "r" => {
-            read_puzzle(&session_cookie, year, day, width)
+            read_puzzle(&session_cookie, year, day, col_width)
         }
         _ => unreachable!(),
     }
@@ -67,9 +70,9 @@ fn parse_args() -> ArgMatches<'static> {
     }
 
     fn width_validator(value: String) -> Result<(), String> {
-        match value.parse() {
-            Ok(width) if is_valid_width(width) => Ok(()),
-            Ok(_) => Err(String::from("Not a valid width")),
+        match value.parse::<usize>() {
+            Ok(width) if width > 0 => Ok(()),
+            Ok(_) => Err(String::from("Invalid width")),
             _ => Err(String::from("Invalid number")),
         }
     }

@@ -9,7 +9,6 @@ use std::io::Write;
 
 pub type PuzzleYear = i32;
 pub type PuzzleDay = u32;
-pub type ColumnWidth = usize;
 
 const FIRST_EVENT_YEAR: PuzzleYear = 2015;
 const DECEMBER: u32 = 12;
@@ -23,10 +22,6 @@ pub fn is_valid_year(year: PuzzleYear) -> bool {
 
 pub fn is_valid_day(day: PuzzleDay) -> bool {
     (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY).contains(&day)
-}
-
-pub fn is_valid_width(width: ColumnWidth) -> bool {
-    width > 0
 }
 
 pub fn latest_event_year() -> PuzzleYear {
@@ -140,7 +135,7 @@ pub fn submit_answer(
     opt_day: Option<PuzzleDay>,
     part: &str,
     answer: &str,
-    opt_width: Option<ColumnWidth>,
+    col_width: usize,
 ) -> Result<(), String> {
     let (year, day) = puzzle_day_year(opt_year, opt_day)?;
 
@@ -166,10 +161,7 @@ pub fn submit_answer(
         .unwrap()
         .as_str();
 
-    let output_width = opt_width.unwrap_or_else(|| {
-        term_size::dimensions().map(|(w, _)| w).unwrap_or(80)
-    });
-    println!("\n{}", from_read(result.as_bytes(), output_width));
+    println!("\n{}", from_read(result.as_bytes(), col_width));
     Ok(())
 }
 
@@ -177,7 +169,7 @@ pub fn read_puzzle(
     session_cookie: &str,
     opt_year: Option<PuzzleYear>,
     opt_day: Option<PuzzleDay>,
-    opt_width: Option<ColumnWidth>,
+    col_width: usize,
 ) -> Result<(), String> {
     let (year, day) = puzzle_day_year(opt_year, opt_day)?;
 
@@ -198,9 +190,6 @@ pub fn read_puzzle(
         .unwrap()
         .as_str();
 
-    let output_width = opt_width.unwrap_or_else(|| {
-        term_size::dimensions().map(|(w, _)| w).unwrap_or(80)
-    });
-    println!("\n{}", from_read(description.as_bytes(), output_width));
+    println!("\n{}", from_read(description.as_bytes(), col_width));
     Ok(())
 }
