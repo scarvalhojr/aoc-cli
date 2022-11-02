@@ -38,45 +38,41 @@ directory. This file should only contain your session number, in a single line.
 ## Usage
 
 ```
-# aoc --help
+# aoc help
 
-aoc 0.1.0
 Advent of Code command-line helper tool
 
-USAGE:
-    aoc [OPTIONS] <COMMAND> [ARGS]
+Usage: aoc [OPTIONS] [COMMAND]
 
-FLAGS:
-    -h, --help
-            Prints help information
+Commands:
+  read      Read puzzle statement (the default command) [aliases: r]
+  download  Download puzzle input [aliases: d]
+  submit    Submit puzzle answer [aliases: s]
+  help      Print this message or the help of the given subcommand(s)
 
-    -V, --version
-            Prints version information
+Options:
+  -d, --day <DAY>       Puzzle day [default: last unlocked day (during Advent of Code month)]
+  -y, --year <YEAR>     Puzzle year [default: year of current or last Advent of Code event]
+  -s, --session <PATH>  Path to session cookie file [default: ~/.adventofcode.session]
+  -f, --file <PATH>     Path where to save puzzle input [default: input]
+  -w, --width <WIDTH>   Width at which to wrap output [default: terminal width]
+  -h, --help            Print help information
+  -V, --version         Print version information
+```
 
+```
+# aoc help submit
 
-OPTIONS:
-    -d, --day <DAY>
-            Puzzle day [default: last unlocked day (during Advent of Code)]
+Submit puzzle answer
 
-    -f, --file <PATH>
-            Path to file where to save puzzle input [default: input]
+Usage: aoc submit <PART> <ANSWER>
 
-    -s, --session <PATH>
-            Path to session cookie file [default ~/.adventofcode.session]
+Arguments:
+  <PART>    Puzzle part [possible values: 1, 2]
+  <ANSWER>  Puzzle answer
 
-    -y, --year <YEAR>
-            Puzzle year [default: year of current or last Advent of Code]
-
-
-ARGS:
-    <COMMAND>
-            Commands are 'read' (or 'r') to read puzzle description, 'download' (or 'd') to download puzzle input, and
-            'submit' (or 's') to submit a puzzle answer. [possible values: download, d, read, r, submit, s]
-    <PART>
-            Puzzle part (required when submitting answers) [possible values: 1, 2]
-
-    <ANSWER>
-            Puzzle answer (required when submitting answers)
+Options:
+  -h, --help  Print help information
 ```
 
 ### Read puzzle description
