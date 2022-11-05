@@ -1,7 +1,7 @@
 # aoc-cli
 
 [![Build and test](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml)
-[![Clippy](https://github.com/scarvalhojr/aoc-cli/actions/workflows/rust-clippy.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/rust-clippy.yml)
+[![Clippy and format](https://github.com/scarvalhojr/aoc-cli/actions/workflows/clippy-and-fmt.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/clippy-and-fmt.yml)
 
 [Advent of Code](https://adventofcode.com) command-line tool.
 

@@ -1,0 +1,21 @@
+name: Clippy
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  clippy-and-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Run Clippy
+        uses: actions-rs/clippy-check@v1
+      - name: Check formatting
+        run: cargo fmt --check --verbose
