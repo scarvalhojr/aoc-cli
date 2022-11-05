@@ -3,8 +3,10 @@ name = "aoc-cli"
 description = "Advent of Code command-line helper tool"
 version = "0.4.0"
 authors = ["Sergio de Carvalho <scarvalhojr@gmail.com>"]
+categories = ["command-line-utilities"]
 edition = "2021"
 repository = "https://github.com/scarvalhojr/aoc-cli"
+documentation = "https://docs.rs/crate/aoc-cli/latest"
 readme = "README.md"
 license = "MIT"
 

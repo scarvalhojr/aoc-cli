@@ -27,7 +27,6 @@ pub struct Args {
     pub width: Option<usize>,
 
     #[command(subcommand)]
-    // #[command()]
     pub command: Option<Command>,
 }
 

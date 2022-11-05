@@ -62,7 +62,7 @@ pub fn puzzle_unlocked(year: PuzzleYear, day: PuzzleDay) -> bool {
     }
 }
 
-fn puzzle_day_year(
+fn puzzle_year_day(
     opt_year: Option<PuzzleYear>,
     opt_day: Option<PuzzleDay>,
 ) -> Result<(PuzzleYear, PuzzleDay), String> {
@@ -104,7 +104,7 @@ pub fn download_input(
     opt_day: Option<PuzzleDay>,
     filename: &str,
 ) -> Result<(), String> {
-    let (year, day) = puzzle_day_year(opt_year, opt_day)?;
+    let (year, day) = puzzle_year_day(opt_year, opt_day)?;
 
     eprintln!("Downloading input for day {}, {}...", day, year);
     let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
@@ -137,7 +137,7 @@ pub fn submit_answer(
     answer: &str,
     col_width: usize,
 ) -> Result<(), String> {
-    let (year, day) = puzzle_day_year(opt_year, opt_day)?;
+    let (year, day) = puzzle_year_day(opt_year, opt_day)?;
 
     eprintln!(
         "Submitting answer for part {}, day {}, {}...",
@@ -171,7 +171,7 @@ pub fn read_puzzle(
     opt_day: Option<PuzzleDay>,
     col_width: usize,
 ) -> Result<(), String> {
-    let (year, day) = puzzle_day_year(opt_year, opt_day)?;
+    let (year, day) = puzzle_year_day(opt_year, opt_day)?;
 
     let url = format!("https://adventofcode.com/{}/day/{}", year, day);
     let content_type = "text/html";

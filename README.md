@@ -3,17 +3,19 @@
 [![Build and test](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml)
 [![Clippy](https://github.com/scarvalhojr/aoc-cli/actions/workflows/rust-clippy.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/rust-clippy.yml)
 
-[Advent of Code](https://adventofcode.com) command-line helper tool.
+[Advent of Code](https://adventofcode.com) command-line tool.
+
+Read Advent of Code puzzle descriptions, download puzzle input, submit answers
+and check if they are correct, all from the comfort of your terminal.
 
 ## Features
 
-- Read puzzle description, download input and save it to a file.
-- Submit answers and check if they are correct.
-- Load Advent of Code session cookie from a file.
 - Validate arguments (year, day, part) and check if puzzle is unlocked.
+- Infer puzzle day when possible (last unlocked puzzle during Advent of Code
+  month).
 - If year is not provided, it is assumed to be the current or the last Advent of
   Code event.
-- Infer puzzle day when possible (last unlocked puzzle during Advent of Code).
+- Load Advent of Code session cookie from a file.
 
 ## Install
 
@@ -27,6 +29,12 @@ it with:
 ```
 # cargo install aoc-cli
 ```
+
+## Dependencies
+
+`aoc-cli` relies on [openssl-sys](https://crates.io/crates/openssl-sys), which
+requires OpenSSL libraries and headers for compiling it. You may therefore need
+to install a package such as `libssl-dev` or `openssl-devel`.
 
 ## Session cookie
 
@@ -126,9 +134,10 @@ That's the right answer! You are one gold star closer to saving your vacation. [
 
 ### Command abbreviations
 
-- Type `aoc r` instead of `aoc read`
-- Type `aoc d` instead of `aoc download`
-- Type `aoc s` instead of `aoc submit`
+Any prefix of a command can be used instead of the full command name. For instance:
+- Instead of `aoc read`, type `aoc r`, `aoc re` or `aoc rea`.
+- Instead of `aoc download`, type `aoc d`, `aoc do`, `aoc dow`, `aoc down`, etc.
+- Instead of `aoc submit`, type `aoc s`, `aoc su`, `aoc sub`, etc.
 
 ### More examples
 
