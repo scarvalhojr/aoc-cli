@@ -1,4 +1,4 @@
-name: Clippy
+name: Clippy and format
 
 on:
   push:
@@ -16,8 +16,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Run Clippy
-        uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo clippy --verbose
       - name: Check formatting
         run: cargo fmt --check --verbose
