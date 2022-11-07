@@ -6,28 +6,34 @@ use std::str::FromStr;
 #[derive(Parser, Debug)]
 #[command(version, about, infer_subcommands = true)]
 pub struct Args {
+    #[command(subcommand)]
+    pub command: Option<Command>,
+
     /// Puzzle day [default: last unlocked day (during Advent of Code month)]
-    #[arg(short, long, value_parser = valid_day)]
+    #[arg(short, long, global = true, value_parser = valid_day)]
     pub day: Option<PuzzleDay>,
 
     /// Puzzle year [default: year of current or last Advent of Code event]
-    #[arg(short, long, value_parser = valid_year)]
+    #[arg(short, long, global = true, value_parser = valid_year)]
     pub year: Option<PuzzleYear>,
 
     /// Path to session cookie file [default: ~/.adventofcode.session]
-    #[arg(short, long, value_name = "PATH")]
+    #[arg(short, long, global = true, value_name = "PATH")]
     pub session: Option<String>,
 
-    /// Path where to save puzzle input
-    #[arg(short, long, value_name = "PATH", default_value = "input")]
-    pub file: String,
-
     /// Width at which to wrap output [default: terminal width]
-    #[arg(short, long, value_parser = valid_width)]
+    #[arg(short, long, global = true, value_parser = valid_width)]
     pub width: Option<usize>,
 
-    #[command(subcommand)]
-    pub command: Option<Command>,
+    /// Path where to save puzzle input
+    #[arg(
+        short,
+        long,
+        global = true,
+        value_name = "PATH",
+        default_value = "input",
+    )]
+    pub file: String,
 }
 
 #[derive(Subcommand, Debug)]
