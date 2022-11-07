@@ -31,7 +31,7 @@ pub struct Args {
         long,
         global = true,
         value_name = "PATH",
-        default_value = "input",
+        default_value = "input"
     )]
     pub file: String,
 }
