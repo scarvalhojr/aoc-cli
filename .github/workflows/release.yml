@@ -8,7 +8,7 @@ on:
 
 jobs:
   publish:
-    name: Releasing for ${{ matrix.job.target }}
+    name: Releasing ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.os }}
     strategy:
       matrix:
@@ -61,10 +61,10 @@ jobs:
     steps:
       - name: Installing Rust toolchain
         uses: dtolnay/rust-toolchain@master
-        if: ${{ matrix.use-cross == false }}
+        if: ${{ matrix.job.use-cross == false }}
         with:
           toolchain: stable
-          target: ${{ matrix.target }}
+          target: ${{ matrix.job.target }}
 
       - name: Checkout repository
         uses: actions/checkout@v3
