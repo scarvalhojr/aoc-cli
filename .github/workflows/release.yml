@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  publish:
+    name: Releasing for ${{ matrix.job.os }}
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      matrix:
+        job:
+          # 64-bit macOS
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            use-cross: false
+
+          # 32-bit MSVC (Windows 7+)
+          # - target: i686-pc-windows-msvc
+
+          # 32-bit MinGW (Windows 7+)
+          - target: i686-pc-windows-gnu
+            os: ubuntu-latest
+            use-cross: true
+
+          # 64-bit MSVC (Windows 7+)
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            use-cross: false
+
+          # 64-bit MinGW (Windows 7+)
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            use-cross: true
+
+          # 32-bit Linux
+          - target: i686-unknown-linux-gnu
+            os: ubuntu-latest
+            use-cross: true
+
+          # 64-bit Linux
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            use-cross: true
+
+          # 64-bit Linux with MUSL
+          # - target: x86_64-unknown-linux-musl
+          #   os: ubuntu-latest
+          #   use-cross: true
+
+          # ARM64 Linux
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            use-cross: true
+
+    steps:
+      - name: Installing Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Cargo build
+        env:
+          MACOSX_DEPLOYMENT_TARGET: 10.7
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          use-cross: ${{ matrix.job.use-cross }}
+          args: --release --target ${{ matrix.job.target }}
+
+
