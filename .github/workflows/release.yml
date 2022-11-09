@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    name: Releasing for ${{ matrix.job.os }}
+    name: Releasing for ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.os }}
     strategy:
       matrix:
@@ -18,17 +18,19 @@ jobs:
             use-cross: false
 
           # 32-bit MSVC (Windows 7+)
-          # - target: i686-pc-windows-msvc
-
-          # 32-bit MinGW (Windows 7+)
-          - target: i686-pc-windows-gnu
-            os: ubuntu-latest
-            use-cross: true
+          - target: i686-pc-windows-msvc
+            os: windows-latest
+            use-cross: false
 
           # 64-bit MSVC (Windows 7+)
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             use-cross: false
+
+          # 32-bit MinGW (Windows 7+)
+          - target: i686-pc-windows-gnu
+            os: ubuntu-latest
+            use-cross: true
 
           # 64-bit MinGW (Windows 7+)
           - target: x86_64-pc-windows-gnu
@@ -57,11 +59,11 @@ jobs:
 
     steps:
       - name: Installing Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
+        if: ${{ matrix.use-cross == false }}
         with:
           toolchain: stable
-          profile: minimal
-          override: true
+          target: ${{ matrix.target }}
 
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -74,5 +76,4 @@ jobs:
           command: build
           use-cross: ${{ matrix.job.use-cross }}
           args: --release --target ${{ matrix.job.target }}
-
 
