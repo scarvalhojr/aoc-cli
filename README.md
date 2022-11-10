@@ -3,6 +3,7 @@
 [![Build and test](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml)
 [![Clippy and format](https://github.com/scarvalhojr/aoc-cli/actions/workflows/clippy-and-fmt.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/clippy-and-fmt.yml)
 [![Release](https://github.com/scarvalhojr/aoc-cli/actions/workflows/release.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/release.yml)
+[![Crates.io](https://img.shields.io/crates/v/aoc-cli.svg)](https://crates.io/crates/aoc-cli)
 
 [Advent of Code](https://adventofcode.com) command-line tool.
 
@@ -18,7 +19,9 @@ and check if they are correct, all from the comfort of your terminal.
   Code event.
 - Load Advent of Code session cookie from a file.
 
-## Install
+## Installation options
+
+### Compile from source
 
 - Install a recent version of Rust using [rustup](https://rustup.rs/) or update
 it with:
@@ -26,16 +29,34 @@ it with:
 # rustup update
 ```
 
+`aoc-cli` relies on [openssl-sys](https://crates.io/crates/openssl-sys), which
+requires OpenSSL libraries and headers for compiling it. On Linux, you need
+to install a package with OpenSSL development headers such as `libssl-dev` or
+`openssl-devel`.
+
 - Install `aoc-cli` with cargo:
 ```
 # cargo install aoc-cli
 ```
 
-## Dependencies
+### Download release artifacts
 
-`aoc-cli` relies on [openssl-sys](https://crates.io/crates/openssl-sys), which
-requires OpenSSL libraries and headers for compiling it. You may therefore need
-to install a package such as `libssl-dev` or `openssl-devel`.
+Executables for selected platforms are available in
+[GitHub releases](https://github.com/scarvalhojr/aoc-cli/releases). Simply
+download and extract the file. The Linux package is statically-linked with
+OpenSSL and [musl C library](https://www.musl-libc.org/), and it should just
+work on most Linux distributions. The macOS and Windows packages should
+automatically detect installed OpenSSL libraries. The MSVC Windows packages
+require the redistributable Visual C++ runtime library, whereas the MinGW
+packages require the [Minimalist GNU for Windows](https://osdn.net/projects/mingw/)
+runtime libraries.
+
+* `aoc-cli-<version>-x86_64-unknown-linux-musl.tar.gz` - Statically-linked 64-bit Linux
+* `aoc-cli-<version>-x86_64-apple-darwin.tar.gz` - 64-bit macOS (10.7 or newer)
+* `aoc-cli-<version>-x86_64-pc-windows-msvc.zip` - 64-bit Windows MSVC (Windows 7 or newer)
+* `aoc-cli-<version>-x86_64-pc-windows-gnu.zip` - 64-bit Windows MinGW (Windows 7 or newer)
+* `aoc-cli-<version>-i686-pc-windows-msvc.zip` - 32-bit Windows MSVC (Windows 7 or newer)
+* `aoc-cli-<version>-i686-pc-windows-gnu.zip` - 32-bit Windows MinGW (Windows 7 or newer)
 
 ## Session cookie
 
