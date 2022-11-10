@@ -21,7 +21,7 @@ jobs:
 
     # Ensure committed Cargo.lock is up to date
     - name: Check Cargo.lock
-      run: git diff --exit-code
+      run: git diff --exit-code -- Cargo.lock
 
     - name: Run tests
       run: cargo test --verbose

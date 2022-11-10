@@ -107,3 +107,16 @@ jobs:
           files: aoc-cli-*-${{ matrix.job.target }}.*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-crate:
+    name: Publish crate
+    runs-on: ubuntu-latest
+    environment: Release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - uses: actions-rs/cargo@v1
+        with:
+          command: publish
+          args: --token ${{ secrets.CARGO_API_TOKEN }}
