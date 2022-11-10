@@ -1,10 +1,13 @@
+# This was heavily borrowed from:
+# - https://github.com/dandavison/delta
+# - https://github.com/BurntSushi/ripgrep
+
 name: Release
 
 on:
   push:
-    branches: [ "main" ]
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   publish:
@@ -78,3 +81,25 @@ jobs:
           use-cross: ${{ matrix.job.use-cross }}
           args: --release --target ${{ matrix.job.target }}
 
+      - name: Build archive
+        shell: bash
+        run: |
+          pkg_name="aoc-cli-${GITHUB_REF/refs\/tags\//}-${{ matrix.job.target }}"
+          mkdir "$pkg_name"
+
+          cp {README.md,LICENSE} "$pkg_name/"
+
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp "target/${{ matrix.job.target }}/release/aoc.exe" "$pkg_name/"
+            7z a "$pkg_name.zip" "$pkg_name"
+          else
+            cp "target/${{ matrix.job.target }}/release/aoc" "$pkg_name/"
+            tar czvf "$pkg_name.tar.gz" "$pkg_name"
+          fi
+
+      - name: Release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: aoc-cli-*-${{ matrix.job.target }}.*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
