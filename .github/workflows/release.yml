@@ -52,9 +52,9 @@ jobs:
             use-cross: true
 
           # 64-bit Linux with MUSL
-          # - target: x86_64-unknown-linux-musl
-          #   os: ubuntu-latest
-          #   use-cross: true
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            use-cross: true
 
           # ARM64 Linux
           - target: aarch64-unknown-linux-gnu
