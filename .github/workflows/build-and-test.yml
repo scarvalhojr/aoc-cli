@@ -15,7 +15,13 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+
     - name: Build
       run: cargo build --verbose
+
+    # Ensure committed Cargo.lock is up to date
+    - name: Check Cargo.lock
+      run: git diff --exit-code
+
     - name: Run tests
       run: cargo test --verbose
