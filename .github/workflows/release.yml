@@ -81,7 +81,7 @@ jobs:
           use-cross: ${{ matrix.job.use-cross }}
           args: --release --target ${{ matrix.job.target }}
 
-      - name: Build archive
+      - name: Build package
         shell: bash
         run: |
           pkg_name="aoc-cli-${GITHUB_REF/refs\/tags\//}-${{ matrix.job.target }}"
@@ -89,15 +89,19 @@ jobs:
 
           cp {README.md,LICENSE} "$pkg_name/"
 
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [[ "${{ matrix.job.target }}" == *"windows"* ]]; then
             cp "target/${{ matrix.job.target }}/release/aoc.exe" "$pkg_name/"
-            7z a "$pkg_name.zip" "$pkg_name"
+            if [ "${{ matrix.job.os }}" = "windows-latest" ]; then
+              7z a "$pkg_name.zip" "$pkg_name"
+            else
+              zip "$pkg_name.zip" "$pkg_name"
+            fi
           else
             cp "target/${{ matrix.job.target }}/release/aoc" "$pkg_name/"
             tar czvf "$pkg_name.tar.gz" "$pkg_name"
           fi
 
-      - name: Release assets
+      - name: Release package
         uses: softprops/action-gh-release@v1
         with:
           files: aoc-cli-*-${{ matrix.job.target }}.*
