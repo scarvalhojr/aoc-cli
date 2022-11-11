@@ -47,7 +47,7 @@ jobs:
       - name: Release package
         uses: softprops/action-gh-release@v1
         with:
-          files: aoc-cli-*-x86_64.msi
+          files: target/wix/aoc-cli-*-x86_64.msi
           tag_name: 0.4.6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
