@@ -48,5 +48,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: aoc-cli-*-x86_64.msi
+          name: 0.4.6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
