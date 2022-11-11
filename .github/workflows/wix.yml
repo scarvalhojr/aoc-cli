@@ -37,11 +37,11 @@ jobs:
           args: --release --target ${{ matrix.job.target }}
 
       - name: Install cargo-wix
-        if: ${{ matrix.job.target == "x86_64-pc-windows-msvc" }}
+        if: matrix.job.target == 'x86_64-pc-windows-msvc'
         run: cargo install cargo-wix
 
       - name: Build Windows installer
-        if: ${{ matrix.job.target == "x86_64-pc-windows-msvc" }}
+        if: matrix.job.target == 'x86_64-pc-windows-msvc'
         run: cargo wix
 
       - name: Release package
