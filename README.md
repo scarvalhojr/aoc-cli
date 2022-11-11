@@ -43,20 +43,25 @@ to install a package with OpenSSL development headers such as `libssl-dev` or
 
 Executables for selected platforms are available in
 [GitHub releases](https://github.com/scarvalhojr/aoc-cli/releases). Simply
-download and extract the file. The Linux package is statically-linked with
+download and extract the file. An installer is also available for Windows.
+
+The Linux package is statically-linked with
 OpenSSL and [musl C library](https://www.musl-libc.org/), and it should just
-work on most Linux distributions. The macOS and Windows packages should
+work on most Linux distributions.
+
+The macOS and Windows packages should
 automatically detect installed OpenSSL libraries. The MSVC Windows packages
 require the redistributable Visual C++ runtime library, whereas the MinGW
 packages require the [Minimalist GNU for Windows](https://osdn.net/projects/mingw/)
 runtime libraries.
 
-* `aoc-cli-<version>-x86_64-unknown-linux-musl.tar.gz` - Statically-linked 64-bit Linux
-* `aoc-cli-<version>-x86_64-apple-darwin.tar.gz` - 64-bit macOS (10.7 or newer)
-* `aoc-cli-<version>-x86_64-pc-windows-msvc.zip` - 64-bit Windows MSVC (Windows 7 or newer)
-* `aoc-cli-<version>-x86_64-pc-windows-gnu.zip` - 64-bit Windows MinGW (Windows 7 or newer)
-* `aoc-cli-<version>-i686-pc-windows-msvc.zip` - 32-bit Windows MSVC (Windows 7 or newer)
-* `aoc-cli-<version>-i686-pc-windows-gnu.zip` - 32-bit Windows MinGW (Windows 7 or newer)
+* 64-bit Linux - `aoc-cli-<version>-x86_64-unknown-linux-musl.tar.gz`
+* 64-bit macOS (10.7 or newer) - `aoc-cli-<version>-x86_64-apple-darwin.tar.gz`
+* 64-bit Windows installer - `aoc-cli-<version>-x86_64.msi`
+* 64-bit Windows MSVC (Windows 7 or newer) - `aoc-cli-<version>-x86_64-pc-windows-msvc.zip`
+* 64-bit Windows MinGW (Windows 7 or newer) - `aoc-cli-<version>-x86_64-pc-windows-gnu.zip`
+* 32-bit Windows MSVC (Windows 7 or newer) - `aoc-cli-<version>-i686-pc-windows-msvc.zip`
+* 32-bit Windows MinGW (Windows 7 or newer) - `aoc-cli-<version>-i686-pc-windows-gnu.zip`
 
 ## Session cookie
 

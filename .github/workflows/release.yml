@@ -86,10 +86,20 @@ jobs:
             tar czvf "$pkg_name.tar.gz" "$pkg_name"
           fi
 
-      - name: Release package
+      - name: Install cargo-wix
+        if: matrix.job.target == 'x86_64-pc-windows-msvc'
+        run: cargo install cargo-wix
+
+      - name: Build Windows installer
+        if: matrix.job.target == 'x86_64-pc-windows-msvc'
+        run: cargo wix --verbose
+
+      - name: Release packages
         uses: softprops/action-gh-release@v1
         with:
-          files: aoc-cli-*-${{ matrix.job.target }}.*
+          files: |
+            aoc-cli-*-${{ matrix.job.target }}.*
+            target/wix/aoc-cli-*-x86_64.msi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
