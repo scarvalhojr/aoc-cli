@@ -39,6 +39,14 @@ to install a package with OpenSSL development headers such as `libssl-dev` or
 # cargo install aoc-cli
 ```
 
+### Windows Package Manager
+
+On Windows 10 and 11, use the built-in `winget` command line tool:
+
+```
+# winget install aoc-cli
+```
+
 ### Download release artifacts
 
 Executables for selected platforms are available in
@@ -55,13 +63,13 @@ require the redistributable Visual C++ runtime library, whereas the MinGW
 packages require the [Minimalist GNU for Windows](https://osdn.net/projects/mingw/)
 runtime libraries.
 
-* 64-bit Linux - `aoc-cli-<version>-x86_64-unknown-linux-musl.tar.gz`
-* 64-bit macOS (10.7 or newer) - `aoc-cli-<version>-x86_64-apple-darwin.tar.gz`
-* 64-bit Windows installer - `aoc-cli-<version>-x86_64.msi`
-* 64-bit Windows MSVC (Windows 7 or newer) - `aoc-cli-<version>-x86_64-pc-windows-msvc.zip`
-* 64-bit Windows MinGW (Windows 7 or newer) - `aoc-cli-<version>-x86_64-pc-windows-gnu.zip`
-* 32-bit Windows MSVC (Windows 7 or newer) - `aoc-cli-<version>-i686-pc-windows-msvc.zip`
-* 32-bit Windows MinGW (Windows 7 or newer) - `aoc-cli-<version>-i686-pc-windows-gnu.zip`
+* x86 64-bit Linux - `aoc-cli-<version>-x86_64-unknown-linux-musl.tar.gz`
+* x86 64-bit macOS (10.7 or newer) - `aoc-cli-<version>-x86_64-apple-darwin.tar.gz`
+* x86 64-bit Windows installer - `aoc-cli-<version>-x86_64.msi`
+* x86 64-bit Windows MSVC (Windows 7 or newer) - `aoc-cli-<version>-x86_64-pc-windows-msvc.zip`
+* x86 64-bit Windows MinGW (Windows 7 or newer) - `aoc-cli-<version>-x86_64-pc-windows-gnu.zip`
+* i686 32-bit Windows MSVC (Windows 7 or newer) - `aoc-cli-<version>-i686-pc-windows-msvc.zip`
+* i686 32-bit Windows MinGW (Windows 7 or newer) - `aoc-cli-<version>-i686-pc-windows-gnu.zip`
 
 ## Session cookie
 

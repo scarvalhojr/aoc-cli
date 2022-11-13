@@ -79,7 +79,7 @@ jobs:
             if [ "${{ matrix.job.os }}" = "windows-latest" ]; then
               7z a "$pkg_name.zip" "$pkg_name"
             else
-              zip "$pkg_name.zip" "$pkg_name"
+              zip -r "$pkg_name.zip" "$pkg_name"
             fi
           else
             cp "target/${{ matrix.job.target }}/release/aoc" "$pkg_name/"
