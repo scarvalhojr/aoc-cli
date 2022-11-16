@@ -17,11 +17,7 @@ jobs:
       - name: Run wingetcreate
         shell: powershell
         run: |
-          # iwr https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -OutFile $(vcLibsBundleFile)
-          # Add-AppxPackage $(vcLibsBundleFile)
-
-          # Download, install, and execute update.
-          # iwr https://aka.ms/wingetcreate/latest/msixbundle -OutFile $(appxBundleFile)
-          # Add-AppxPackage $(appxBundleFile)
+          # Install WingetCreate
+          winget install Microsoft.WingetCreate
 
           wingetcreate update scarvalhojr.aoc-cli -urls ${env:PACKAGE_URL} -version ${env:RELEASE_VER} --token ${env:GITHUB_TOKEN} --submit
