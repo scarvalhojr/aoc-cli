@@ -1,0 +1,33 @@
+name: Windows Release
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  publish:
+    name: Releasing ${{ matrix.job.target }}
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      matrix:
+        job:
+          # 64-bit MSVC (Windows 7+)
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            use-cross: false
+
+    steps:
+      - name: Update Windows Package Manager repository
+        if: matrix.job.target == 'x86_64-pc-windows-msvc'
+        with:
+          release-version: 0.4.7
+          package-url: https://github.com/scarvalhojr/aoc-cli/releases/download/${{ release-version }}/aoc-cli-${{ release-version }}-x86_64.msi
+        powershell: |
+          iwr https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -OutFile $(vcLibsBundleFile)
+          Add-AppxPackage $(vcLibsBundleFile)
+
+          # Download, install, and execute update.
+          iwr https://aka.ms/wingetcreate/latest/msixbundle -OutFile $(appxBundleFile)
+
+          Add-AppxPackage $(appxBundleFile)
+          wingetcreate update scarvalhojr.aoc-cli -urls $(package-url) -version $(release-version) --token $(GH_ACCESS_TOKEN) --submit
