@@ -14,7 +14,8 @@ jobs:
       package-url: "https://github.com/scarvalhojr/aoc-cli/releases/download/$(release-version)/aoc-cli-$(release-version)-x86_64.msi"
     steps:
       - name: Run wingetcreate
-        powershell: |
+        shell: powershell
+        run: |
           # iwr https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -OutFile $(vcLibsBundleFile)
           # Add-AppxPackage $(vcLibsBundleFile)
 
