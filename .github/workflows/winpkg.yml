@@ -13,13 +13,18 @@ jobs:
       RELEASE_VER: '0.4.7'
       PACKAGE_URL: "https://github.com/scarvalhojr/aoc-cli/releases/download/0.4.7/aoc-cli-0.4.7-x86_64.msi"
       GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-      INSTALLER_FILE: 'WingetCreateInstaller.msixbundle'
+      VCLIBS_INSTALLER: 'MicrosoftVCLibs.appx'
+      WINGETCREATE_INSTALLER: 'WingetCreateInstaller.msixbundle'
     steps:
       - name: Run wingetcreate
         shell: powershell
         run: |
+          # Download and install C++ Runtime framework package
+          iwr https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -OutFile ${env:VCLIBS_INSTALLER}
+          Add-AppxPackage ${env:VCLIBS_INSTALLER}
+
           # Download and install WingetCreate
-          iwr https://aka.ms/wingetcreate/latest/msixbundle -OutFile ${env:INSTALLER_FILE}
-          Add-AppxPackage ${env:INSTALLER_FILE}
+          iwr https://aka.ms/wingetcreate/latest/msixbundle -OutFile ${env:WINGETCREATE_INSTALLER}
+          Add-AppxPackage ${env:WINGETCREATE_INSTALLER}
 
           wingetcreate update scarvalhojr.aoc-cli -urls ${env:PACKAGE_URL} -version ${env:RELEASE_VER} --token ${env:GITHUB_TOKEN} --submit
