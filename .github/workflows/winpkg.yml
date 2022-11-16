@@ -24,4 +24,4 @@ jobs:
           # iwr https://aka.ms/wingetcreate/latest/msixbundle -OutFile $(appxBundleFile)
           # Add-AppxPackage $(appxBundleFile)
 
-          wingetcreate update scarvalhojr.aoc-cli -urls ${env:PACKAGE_URL} -version ${env:RELEASE_VER} --token $(env:GITHUB_TOKEN) --submit
+          wingetcreate update scarvalhojr.aoc-cli -urls ${env:PACKAGE_URL} -version ${env:RELEASE_VER} --token ${env:GITHUB_TOKEN} --submit
