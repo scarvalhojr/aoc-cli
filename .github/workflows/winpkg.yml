@@ -11,7 +11,7 @@ jobs:
     environment: Release
     env:
       RELEASE_VER: '0.4.7'
-      PACKAGE_URL: "https://github.com/scarvalhojr/aoc-cli/releases/download/${{ env:RELEASE_VER }}/aoc-cli-${{ env:RELEASE_VER }}-x86_64.msi"
+      PACKAGE_URL: "https://github.com/scarvalhojr/aoc-cli/releases/download/${{ env.RELEASE_VER }}/aoc-cli-${{ env.RELEASE_VER }}-x86_64.msi"
       GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
     steps:
       - name: Run wingetcreate
