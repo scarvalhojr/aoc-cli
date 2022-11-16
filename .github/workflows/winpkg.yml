@@ -9,9 +9,10 @@ jobs:
     name: Update Windows Package Manager repository
     runs-on: windows-latest
     environment: Release
-    variables:
-      release-version: '0.4.7'
-      package-url: "https://github.com/scarvalhojr/aoc-cli/releases/download/$(release-version)/aoc-cli-$(release-version)-x86_64.msi"
+    env:
+      RELEASE_VER: '0.4.7'
+      PACKAGE_URL: "https://github.com/scarvalhojr/aoc-cli/releases/download/${{ env:RELEASE_VER }}/aoc-cli-${{ env:RELEASE_VER }}-x86_64.msi"
+      GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
     steps:
       - name: Run wingetcreate
         shell: powershell
@@ -23,4 +24,4 @@ jobs:
           # iwr https://aka.ms/wingetcreate/latest/msixbundle -OutFile $(appxBundleFile)
           # Add-AppxPackage $(appxBundleFile)
 
-          wingetcreate update scarvalhojr.aoc-cli -urls $(package-url) -version $(release-version) --token $(GH_ACCESS_TOKEN) --submit
+          wingetcreate update scarvalhojr.aoc-cli -urls ${env:PACKAGE_URL} -version ${env:RELEASE_VER} --token $(env:GITHUB_TOKEN) --submit
