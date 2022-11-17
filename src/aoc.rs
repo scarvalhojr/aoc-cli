@@ -24,8 +24,9 @@ pub fn is_valid_day(day: PuzzleDay) -> bool {
     (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY).contains(&day)
 }
 
-pub fn latest_event_year() -> PuzzleYear {
-    let now = FixedOffset::east(RELEASE_TIMEZONE_OFFSET)
+fn latest_event_year() -> PuzzleYear {
+    let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)
+        .unwrap()
         .from_utc_datetime(&Utc::now().naive_utc());
 
     if now.month() < DECEMBER {
@@ -35,8 +36,8 @@ pub fn latest_event_year() -> PuzzleYear {
     }
 }
 
-pub fn current_event_day(year: PuzzleYear) -> Option<PuzzleDay> {
-    let now = FixedOffset::east(RELEASE_TIMEZONE_OFFSET)
+fn current_event_day(year: PuzzleYear) -> Option<PuzzleDay> {
+    let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)?
         .from_utc_datetime(&Utc::now().naive_utc());
 
     if now.month() == DECEMBER && now.year() == year {
@@ -46,19 +47,19 @@ pub fn current_event_day(year: PuzzleYear) -> Option<PuzzleDay> {
     }
 }
 
-pub fn puzzle_unlocked(year: PuzzleYear, day: PuzzleDay) -> bool {
-    let timezone = FixedOffset::east(RELEASE_TIMEZONE_OFFSET);
+fn puzzle_unlocked(year: PuzzleYear, day: PuzzleDay) -> Result<bool, String> {
+    let timezone = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET).unwrap();
     let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
-    let unlock_time = timezone
-        .from_local_datetime(
-            &NaiveDate::from_ymd(year, DECEMBER, day).and_hms(0, 0, 0),
-        )
-        .single();
+    let puzzle_date = NaiveDate::from_ymd_opt(year, DECEMBER, day)
+        .ok_or_else(|| format!("Invalid date: day {}, year {}.", day, year))?
+        .and_hms_opt(0, 0, 0)
+        .unwrap();
+    let unlock_time = timezone.from_local_datetime(&puzzle_date).single();
 
     if let Some(time) = unlock_time {
-        now.signed_duration_since(time).num_milliseconds() >= 0
+        Ok(now.signed_duration_since(time).num_milliseconds() >= 0)
     } else {
-        false
+        Ok(false)
     }
 }
 
@@ -71,7 +72,7 @@ fn puzzle_year_day(
         .or_else(|| current_event_day(year))
         .ok_or_else(|| format!("Could not infer puzzle day for {}.", year))?;
 
-    if !puzzle_unlocked(year, day) {
+    if !puzzle_unlocked(year, day)? {
         return Err(format!("Puzzle {} of {} is still locked.", day, year));
     }
 
