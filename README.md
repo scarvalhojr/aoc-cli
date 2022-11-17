@@ -3,7 +3,7 @@
 [![Build and test](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml)
 [![Clippy and format](https://github.com/scarvalhojr/aoc-cli/actions/workflows/clippy-and-fmt.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/clippy-and-fmt.yml)
 [![Release](https://github.com/scarvalhojr/aoc-cli/actions/workflows/release.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/release.yml)
-[![Crates.io](https://img.shields.io/crates/v/aoc-cli.svg)](https://crates.io/crates/aoc-cli)
+[![crates.io](https://img.shields.io/crates/v/aoc-cli.svg)](https://crates.io/crates/aoc-cli)
 
 [Advent of Code](https://adventofcode.com) command-line tool.
 
@@ -41,7 +41,9 @@ to install a package with OpenSSL development headers such as `libssl-dev` or
 
 ### Windows Package Manager
 
-On Windows 10 and 11, use the built-in `winget` command line tool:
+On Windows 10 and 11, use the
+[Windows Package Manager](https://learn.microsoft.com/en-us/windows/package-manager/winget/)
+command line tool:
 
 ```
 # winget install aoc-cli

@@ -10,7 +10,7 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  publish:
+  release:
     name: Releasing ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.os }}
     strategy:
@@ -59,17 +59,18 @@ jobs:
 
       - name: Cargo build
         env:
+          RUSTFLAGS: "-Dwarnings"
           MACOSX_DEPLOYMENT_TARGET: 10.7
         uses: actions-rs/cargo@v1
         with:
           command: build
           use-cross: ${{ matrix.job.use-cross }}
-          args: --release --target ${{ matrix.job.target }}
+          args: --locked --release --target ${{ matrix.job.target }}
 
       - name: Build package
         shell: bash
         run: |
-          pkg_name="aoc-cli-${GITHUB_REF/refs\/tags\//}-${{ matrix.job.target }}"
+          pkg_name="aoc-cli-${GITHUB_REF_NAME}-${{ matrix.job.target }}"
           mkdir "$pkg_name"
 
           cp {README.md,LICENSE} "$pkg_name/"
@@ -105,6 +106,7 @@ jobs:
 
   publish-crate:
     name: Publish crate
+    needs: release
     runs-on: ubuntu-latest
     environment: Release
     steps:
@@ -115,3 +117,28 @@ jobs:
         with:
           command: publish
           args: --token ${{ secrets.CARGO_API_TOKEN }}
+
+  publish-windows:
+    name: Update Windows Package Manager repository
+    needs: release
+    runs-on: windows-latest
+    environment: Release
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+    steps:
+      - name: Run wingetcreate
+        shell: powershell
+        run: |
+          # Download and install C++ Runtime framework
+          $VCLIBS_INSTALLER = "MicrosoftVCLibs.appx"
+          iwr https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -OutFile ${VCLIBS_INSTALLER}
+          Add-AppxPackage ${VCLIBS_INSTALLER}
+
+          # Download and install WingetCreate
+          $WINGETCREATE_INSTALLER = "WingetCreateInstaller.msixbundle"
+          iwr https://aka.ms/wingetcreate/latest/msixbundle -OutFile ${WINGETCREATE_INSTALLER}
+          Add-AppxPackage ${WINGETCREATE_INSTALLER}
+
+          $RELEASE_VER = "${env:GITHUB_REF_NAME}"
+          $PACKAGE_URL = "https://github.com/scarvalhojr/aoc-cli/releases/download/${RELEASE_VER}/aoc-cli-${RELEASE_VER}-x86_64.msi"
+          wingetcreate update scarvalhojr.aoc-cli --urls ${PACKAGE_URL} --version ${RELEASE_VER} --token "${env:GITHUB_TOKEN}" --submit

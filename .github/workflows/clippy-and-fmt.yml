@@ -15,7 +15,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Run Clippy
-        run: cargo clippy --verbose
+        env:
+          RUSTFLAGS: "-Dwarnings"
+        run: cargo clippy --locked
+
       - name: Check formatting
-        run: cargo fmt --check --verbose
+        run: cargo fmt --check
