@@ -38,6 +38,14 @@ to install a package with OpenSSL development headers such as `libssl-dev` or
 ```
 # cargo install aoc-cli
 ```
+### Homebrew
+
+On macOS and Linux, use [Homebrew](https://brew.sh):
+
+```
+# brew install scarvalhojr/tap/aoc-cli
+```
+
 
 ### Windows Package Manager
 
