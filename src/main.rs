@@ -29,7 +29,9 @@ fn main() -> Result<(), String> {
         Some(Command::Submit { part, answer }) => {
             submit_answer(&session, args.year, args.day, part, answer, width)
         }
-        _ => read_puzzle(&session, args.year, args.day, width),
+        _ => {
+            read_puzzle(&session, args.year, args.day, width, &args.description)
+        }
     }
 }
 

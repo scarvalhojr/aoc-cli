@@ -1,4 +1,5 @@
 use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
+use html2md::parse_html;
 use html2text::from_read;
 use regex::Regex;
 use reqwest::blocking::Client;
@@ -171,6 +172,7 @@ pub fn read_puzzle(
     opt_year: Option<PuzzleYear>,
     opt_day: Option<PuzzleDay>,
     col_width: usize,
+    filename: &str,
 ) -> Result<(), String> {
     let (year, day) = puzzle_year_day(opt_year, opt_day)?;
 
@@ -192,5 +194,17 @@ pub fn read_puzzle(
         .as_str();
 
     println!("\n{}", from_read(description.as_bytes(), col_width));
+
+    println!("Saving puzzle description to \"{}\"...", filename);
+    OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(filename)
+        .map_err(|err| format!("Failed to create file: {}", err))?
+        .write(parse_html(description).as_bytes())
+        .map_err(|err| format!("Failed to write to file: {}", err))?;
+
+    println!("Done!");
+
     Ok(())
 }

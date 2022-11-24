@@ -34,6 +34,15 @@ pub struct Args {
         default_value = "input"
     )]
     pub file: String,
+
+    /// Path where to save puzzle description
+    #[arg(
+        long,
+        global = true,
+        value_name = "PATH",
+        default_value = "description.md"
+    )]
+    pub description: String,
 }
 
 #[derive(Subcommand, Debug)]
