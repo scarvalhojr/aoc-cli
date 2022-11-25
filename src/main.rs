@@ -15,7 +15,7 @@ const DEFAULT_COL_WIDTH: usize = 80;
 fn main() -> Result<(), String> {
     let args = Args::parse();
 
-    let session = read_session_cookie(args.session);
+    let session = read_session_cookie(args.session_file);
 
     let width = args
         .width
@@ -24,13 +24,13 @@ fn main() -> Result<(), String> {
 
     match &args.command {
         Some(Command::Download) => {
-            download_input(&session, args.year, args.day, &args.file)
+            download_input(&session, args.year, args.day, &args.input_file)
         }
         Some(Command::Submit { part, answer }) => {
             submit_answer(&session, args.year, args.day, part, answer, width)
         }
         _ => {
-            read_puzzle(&session, args.year, args.day, width, &args.description)
+            read_puzzle(&session, args.year, args.day, width, &args.puzzle_file)
         }
     }
 }

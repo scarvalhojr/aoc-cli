@@ -18,8 +18,8 @@ pub struct Args {
     pub year: Option<PuzzleYear>,
 
     /// Path to session cookie file [default: ~/.adventofcode.session]
-    #[arg(short, long, global = true, value_name = "PATH")]
-    pub session: Option<String>,
+    #[arg(short, long, alias = "session", global = true, value_name = "PATH")]
+    pub session_file: Option<String>,
 
     /// Width at which to wrap output [default: terminal width]
     #[arg(short, long, global = true, value_parser = valid_width)]
@@ -29,20 +29,23 @@ pub struct Args {
     #[arg(
         short,
         long,
+        alias = "input",
         global = true,
         value_name = "PATH",
         default_value = "input"
     )]
-    pub file: String,
+    pub input_file: String,
 
     /// Path where to save puzzle description
     #[arg(
+        short,
         long,
+        alias = "puzzle",
         global = true,
         value_name = "PATH",
-        default_value = "description.md"
+        default_value = "puzzle.md"
     )]
-    pub description: String,
+    pub puzzle_file: String,
 }
 
 #[derive(Subcommand, Debug)]

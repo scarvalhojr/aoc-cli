@@ -18,6 +18,7 @@ and check if they are correct, all from the comfort of your terminal.
 - If year is not provided, it is assumed to be the current or the last Advent of
   Code event.
 - Load Advent of Code session cookie from a file.
+- Save puzzle description to a file in Markdown format.
 
 ## Installation options
 
@@ -45,7 +46,6 @@ On macOS and Linux, use [Homebrew](https://brew.sh):
 ```
 # brew install scarvalhojr/tap/aoc-cli
 ```
-
 
 ### Windows Package Manager
 
@@ -107,13 +107,14 @@ Commands:
   help      Print this message or the help of the given subcommand(s)
 
 Options:
-  -d, --day <DAY>       Puzzle day [default: last unlocked day (during Advent of Code month)]
-  -y, --year <YEAR>     Puzzle year [default: year of current or last Advent of Code event]
-  -s, --session <PATH>  Path to session cookie file [default: ~/.adventofcode.session]
-  -f, --file <PATH>     Path where to save puzzle input [default: input]
-  -w, --width <WIDTH>   Width at which to wrap output [default: terminal width]
-  -h, --help            Print help information
-  -V, --version         Print version information
+  -d, --day <DAY>            Puzzle day [default: last unlocked day (during Advent of Code month)]
+  -y, --year <YEAR>          Puzzle year [default: year of current or last Advent of Code event]
+  -s, --session-file <PATH>  Path to session cookie file [default: ~/.adventofcode.session]
+  -w, --width <WIDTH>        Width at which to wrap output [default: terminal width]
+  -i, --input-file <PATH>    Path where to save puzzle input [default: input]
+  -p, --puzzle-file <PATH>   Path where to save puzzle description [default: puzzle.md]
+  -h, --help                 Print help information
+  -V, --version              Print version information
 ```
 
 ```
@@ -134,7 +135,8 @@ Options:
 ### Read puzzle description
 
 Read today's puzzle (if today is an Advent of Code day) in plain text from the
-comfort of your terminal:
+comfort of your terminal. This command also saves the puzzle description to a
+file in Markdown format.
 
 ```
 # aoc read
@@ -145,6 +147,9 @@ You board your plane only to discover a new problem: you dropped your boarding
 pass! You aren't sure which seat is yours, and all of the flight attendants are
 busy with the flood of people that suddenly made it through passport control.
 ...
+
+Saving puzzle description to "puzzle.md"...
+Done!
 ```
 
 ### Download puzzle input
@@ -201,7 +206,7 @@ Download the input from a previous year and save it to a file with a given
 name:
 
 ```
-# aoc download --year 2015 --day 1 --file /home/user/aoc/2015/1/input
+# aoc download --year 2015 --day 1 --input-file /home/user/aoc/2015/1/input
 ```
 
 An attempt to download the input of a puzzle that is still locked fails
@@ -222,7 +227,7 @@ Submit the answer to a previous year:
 
 Specify path to session cookie file:
 ```
-# aoc download --session /tmp/.aoc.session
+# aoc download --session-file /tmp/.aoc.session
 ```
 
 ## Contribute
