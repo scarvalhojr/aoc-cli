@@ -22,6 +22,7 @@ html2text = "0.4"
 regex = "1.6"
 reqwest = { version = "0.11", features = ["blocking"] }
 term_size = "0.3"
+html2md = "0.2"
 
 # Use static linking of OpenSSL on Linux with MUSL
 [target.x86_64-unknown-linux-musl.dependencies]
