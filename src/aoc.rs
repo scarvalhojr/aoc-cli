@@ -105,6 +105,7 @@ pub fn download_input(
     opt_year: Option<PuzzleYear>,
     opt_day: Option<PuzzleDay>,
     filename: &str,
+    overwrite: bool,
 ) -> Result<(), String> {
     let (year, day) = puzzle_year_day(opt_year, opt_day)?;
 
@@ -119,9 +120,15 @@ pub fn download_input(
         .map_err(|err| err.to_string())?;
 
     eprintln!("Saving puzzle input to \"{}\"...", filename);
-    OpenOptions::new()
-        .write(true)
-        .create_new(true)
+
+    let mut file = OpenOptions::new();
+    if overwrite {
+        file.create(true);
+    } else {
+        file.create_new(true);
+    };
+
+    file.write(true)
         .open(filename)
         .map_err(|err| format!("Failed to create file: {}", err))?
         .write(puzzle_input.as_bytes())
@@ -173,6 +180,7 @@ pub fn read_puzzle(
     opt_day: Option<PuzzleDay>,
     col_width: usize,
     filename: &str,
+    overwrite: bool,
 ) -> Result<(), String> {
     let (year, day) = puzzle_year_day(opt_year, opt_day)?;
 
@@ -196,9 +204,15 @@ pub fn read_puzzle(
     println!("\n{}", from_read(description.as_bytes(), col_width));
 
     println!("Saving puzzle description to \"{}\"...", filename);
-    OpenOptions::new()
-        .write(true)
-        .create_new(true)
+
+    let mut file = OpenOptions::new();
+    if overwrite {
+        file.create(true);
+    } else {
+        file.create_new(true);
+    };
+
+    file.write(true)
         .open(filename)
         .map_err(|err| format!("Failed to create file: {}", err))?
         .write(parse_html(description).as_bytes())

@@ -111,6 +111,7 @@ Options:
   -y, --year <YEAR>          Puzzle year [default: year of current or last Advent of Code event]
   -s, --session-file <PATH>  Path to session cookie file [default: ~/.adventofcode.session]
   -w, --width <WIDTH>        Width at which to wrap output [default: terminal width]
+  -o, --overwrite            Overwrite file if it already exists
   -i, --input-file <PATH>    Path where to save puzzle input [default: input]
   -p, --puzzle-file <PATH>   Path where to save puzzle description [default: puzzle.md]
   -h, --help                 Print help information

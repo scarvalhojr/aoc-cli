@@ -23,15 +23,24 @@ fn main() -> Result<(), String> {
         .unwrap_or(DEFAULT_COL_WIDTH);
 
     match &args.command {
-        Some(Command::Download) => {
-            download_input(&session, args.year, args.day, &args.input_file)
-        }
+        Some(Command::Download) => download_input(
+            &session,
+            args.year,
+            args.day,
+            &args.input_file,
+            args.overwrite,
+        ),
         Some(Command::Submit { part, answer }) => {
             submit_answer(&session, args.year, args.day, part, answer, width)
         }
-        _ => {
-            read_puzzle(&session, args.year, args.day, width, &args.puzzle_file)
-        }
+        _ => read_puzzle(
+            &session,
+            args.year,
+            args.day,
+            width,
+            &args.puzzle_file,
+            args.overwrite,
+        ),
     }
 }
 

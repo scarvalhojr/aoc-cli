@@ -22,7 +22,7 @@ dependencies = [
 
 [[package]]
 name = "aoc-cli"
-version = "0.4.8"
+version = "0.5.0"
 dependencies = [
  "chrono",
  "clap",

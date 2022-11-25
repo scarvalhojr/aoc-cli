@@ -25,6 +25,10 @@ pub struct Args {
     #[arg(short, long, global = true, value_parser = valid_width)]
     pub width: Option<usize>,
 
+    /// Overwrite file if it already exists
+    #[arg(short, long, global = true)]
+    pub overwrite: bool,
+
     /// Path where to save puzzle input
     #[arg(
         short,
