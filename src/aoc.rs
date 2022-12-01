@@ -3,7 +3,9 @@ use html2md::parse_html;
 use html2text::from_read;
 use regex::Regex;
 use reqwest::blocking::Client;
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE};
+use reqwest::header::{
+    HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE, USER_AGENT,
+};
 use reqwest::redirect::Policy;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -16,6 +18,9 @@ const DECEMBER: u32 = 12;
 const FIRST_PUZZLE_DAY: PuzzleDay = 1;
 const LAST_PUZZLE_DAY: PuzzleDay = 25;
 const RELEASE_TIMEZONE_OFFSET: i32 = -5 * 3600;
+
+const PKG_REPO: &str = env!("CARGO_PKG_REPOSITORY");
+const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn is_valid_year(year: PuzzleYear) -> bool {
     year >= FIRST_EVENT_YEAR
@@ -88,10 +93,13 @@ fn build_client(
         HeaderValue::from_str(&format!("session={}", session_cookie.trim()))
             .map_err(|err| format!("Invalid session cookie: {}", err))?;
     let content_type_header = HeaderValue::from_str(content_type).unwrap();
+    let user_agent = format!("{PKG_REPO} {PKG_VERSION}");
+    let user_agent_header = HeaderValue::from_str(&user_agent).unwrap();
 
     let mut headers = HeaderMap::new();
     headers.insert(COOKIE, cookie_header);
     headers.insert(CONTENT_TYPE, content_type_header);
+    headers.insert(USER_AGENT, user_agent_header);
 
     Client::builder()
         .default_headers(headers)

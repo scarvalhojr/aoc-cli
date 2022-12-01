@@ -21,9 +21,6 @@ In particular, the commit message should start with one of the following types:
 
 # Ideas
 
-- Add option to save puzzle description to file (bonus if converted to markdown
-  format).
-
 - Add a configuration file (in home or `.config` directory) that can store
   options like:
   - year
@@ -36,21 +33,22 @@ In particular, the commit message should start with one of the following types:
 - Detect when session cookie is expired (currently user gets a HTTP 500 error).
 
 - Commands:
+  - `[b]egin` - read puzzle description and download puzzle input (make it the
+    default command) with an option to wait until the next puzzle unlocks with
+    a countdown timer.
   - `[c]alendar` - show progress calendar (stars collected each day).
   - `[d]ownload` - already implemented!
-  - `[g]lobal-leaderboard` - show [global leaderboard](https://adventofcode.com/2021/leaderboard)
+  - `[g]lobal-leaderboard` - show [global leaderboard](https://adventofcode.com/2022/leaderboard).
   - `[i]nit` - prompt for each configurable option (offering sensible defaults)
-    and create a configuration file
+    and create a configuration file.
   - `[l]ogin` - prompt for session cookie and save it in a user-protected file.
-  - `[pe]rsonal-stats` - show [personal stats](https://adventofcode.com/2021/leaderboard/self)
-  - `[pr]ivate-leaderboard` - show [private leaderboards](https://adventofcode.com/2021/leaderboard/private)
+  - `[pe]rsonal-stats` - show [personal stats](https://adventofcode.com/2022/leaderboard/self).
+  - `[pr]ivate-leaderboard` - show [private leaderboards](https://adventofcode.com/2022/leaderboard/private).
   - `[r]ead` - already implemented!
   - `[se]t-config` - make changes to configuration file (e.g. `aoc set-config year 2015`).
-  - `[st]ats` - show [event stats](https://adventofcode.com/2021/stats)
+  - `[st]ats` - show [event stats](https://adventofcode.com/2022/stats).
   - `[su]bmit` - already implemented!
   - `[u]nset-config` - restore default settings in configuratio file
     (e.g. `aoc unset-config year`).
-  - `[w]ait` - start a countdown to the next puzzle, then automatically download
-    input and read puzzle description when available.
 
 - Add tests!!!

@@ -1,7 +1,7 @@
 [package]
 name = "aoc-cli"
 description = "Advent of Code command-line helper tool"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Sergio de Carvalho <scarvalhojr@gmail.com>"]
 categories = ["command-line-utilities"]
 edition = "2021"
@@ -19,7 +19,7 @@ chrono = "0.4"
 clap = { version = "4", features = ["color", "derive"]}
 home = "0.5"
 html2text = "0.4"
-regex = "1.6"
+regex = "1.7"
 reqwest = { version = "0.11", features = ["blocking"] }
 term_size = "0.3"
 html2md = "0.2"
