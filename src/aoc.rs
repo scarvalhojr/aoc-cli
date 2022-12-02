@@ -1,3 +1,4 @@
+use crate::args::Args;
 use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
 use html2md::parse_html;
 use html2text::from_read;
@@ -108,27 +109,54 @@ fn build_client(
         .map_err(|err| err.to_string())
 }
 
-pub fn download_input(
+fn get_description(
     session_cookie: &str,
-    opt_year: Option<PuzzleYear>,
-    opt_day: Option<PuzzleDay>,
-    filename: &str,
-    overwrite: bool,
-) -> Result<(), String> {
-    let (year, day) = puzzle_year_day(opt_year, opt_day)?;
+    year: PuzzleYear,
+    day: PuzzleDay,
+) -> Result<String, String> {
+    eprintln!("Fetching puzzle for day {}, {}...", day, year);
 
-    eprintln!("Downloading input for day {}, {}...", day, year);
-    let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
-    let content_type = "text/plain";
-    let puzzle_input = build_client(session_cookie, content_type)?
+    let url = format!("https://adventofcode.com/{}/day/{}", year, day);
+    let response = build_client(session_cookie, "text/html")?
         .get(&url)
         .send()
         .and_then(|response| response.error_for_status())
         .and_then(|response| response.text())
         .map_err(|err| err.to_string())?;
 
-    eprintln!("Saving puzzle input to \"{}\"...", filename);
+    let desc = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+        .unwrap()
+        .captures(&response)
+        .ok_or("Failed to parse puzzle description")?
+        .name("main")
+        .unwrap()
+        .as_str()
+        .to_string();
 
+    Ok(desc)
+}
+
+fn get_input(
+    session_cookie: &str,
+    year: PuzzleYear,
+    day: PuzzleDay,
+) -> Result<String, String> {
+    eprintln!("Downloading input for day {}, {}...", day, year);
+
+    let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
+    build_client(session_cookie, "text/plain")?
+        .get(&url)
+        .send()
+        .and_then(|response| response.error_for_status())
+        .and_then(|response| response.text())
+        .map_err(|err| err.to_string())
+}
+
+fn save_file(
+    filename: &str,
+    overwrite: bool,
+    contents: &str,
+) -> Result<(), String> {
     let mut file = OpenOptions::new();
     if overwrite {
         file.create(true);
@@ -139,22 +167,39 @@ pub fn download_input(
     file.write(true)
         .open(filename)
         .map_err(|err| format!("Failed to create file: {}", err))?
-        .write(puzzle_input.as_bytes())
+        .write(contents.as_bytes())
         .map_err(|err| format!("Failed to write to file: {}", err))?;
+
+    Ok(())
+}
+
+pub fn download(args: &Args, session_cookie: &str) -> Result<(), String> {
+    let (year, day) = puzzle_year_day(args.year, args.day)?;
+
+    if !args.input_only {
+        let desc = get_description(session_cookie, year, day)?;
+        eprintln!("Saving puzzle description to \"{}\"...", args.puzzle_file);
+        save_file(&args.puzzle_file, args.overwrite, &parse_html(&desc))?;
+    }
+
+    if !args.description_only {
+        let input = get_input(session_cookie, year, day)?;
+        eprintln!("Saving puzzle input to \"{}\"...", args.input_file);
+        save_file(&args.input_file, args.overwrite, &input)?;
+    }
 
     eprintln!("Done!");
     Ok(())
 }
 
-pub fn submit_answer(
+pub fn submit(
+    args: &Args,
     session_cookie: &str,
-    opt_year: Option<PuzzleYear>,
-    opt_day: Option<PuzzleDay>,
+    col_width: usize,
     part: &str,
     answer: &str,
-    col_width: usize,
 ) -> Result<(), String> {
-    let (year, day) = puzzle_year_day(opt_year, opt_day)?;
+    let (year, day) = puzzle_year_day(args.year, args.day)?;
 
     eprintln!(
         "Submitting answer for part {}, day {}, {}...",
@@ -182,51 +227,13 @@ pub fn submit_answer(
     Ok(())
 }
 
-pub fn read_puzzle(
+pub fn read(
+    args: &Args,
     session_cookie: &str,
-    opt_year: Option<PuzzleYear>,
-    opt_day: Option<PuzzleDay>,
     col_width: usize,
-    filename: &str,
-    overwrite: bool,
 ) -> Result<(), String> {
-    let (year, day) = puzzle_year_day(opt_year, opt_day)?;
-
-    let url = format!("https://adventofcode.com/{}/day/{}", year, day);
-    let content_type = "text/html";
-    let response = build_client(session_cookie, content_type)?
-        .get(&url)
-        .send()
-        .and_then(|response| response.error_for_status())
-        .and_then(|response| response.text())
-        .map_err(|err| err.to_string())?;
-
-    let description = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
-        .unwrap()
-        .captures(&response)
-        .ok_or("Failed to parse puzzle description page")?
-        .name("main")
-        .unwrap()
-        .as_str();
-
-    println!("\n{}", from_read(description.as_bytes(), col_width));
-
-    println!("Saving puzzle description to \"{}\"...", filename);
-
-    let mut file = OpenOptions::new();
-    if overwrite {
-        file.create(true);
-    } else {
-        file.create_new(true);
-    };
-
-    file.write(true)
-        .open(filename)
-        .map_err(|err| format!("Failed to create file: {}", err))?
-        .write(parse_html(description).as_bytes())
-        .map_err(|err| format!("Failed to write to file: {}", err))?;
-
-    println!("Done!");
-
+    let (year, day) = puzzle_year_day(args.year, args.day)?;
+    let desc = get_description(session_cookie, year, day)?;
+    println!("\n{}", from_read(desc.as_bytes(), col_width));
     Ok(())
 }

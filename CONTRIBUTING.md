@@ -32,10 +32,12 @@ In particular, the commit message should start with one of the following types:
 
 - Detect when session cookie is expired (currently user gets a HTTP 500 error).
 
+- Warn user if session file permissions allow reading by others.
+
+- Add option to wait until the next puzzle unlocks with a countdown timer (for
+  read and download commands).
+
 - Commands:
-  - `[b]egin` - read puzzle description and download puzzle input (make it the
-    default command) with an option to wait until the next puzzle unlocks with
-    a countdown timer.
   - `[c]alendar` - show progress calendar (stars collected each day).
   - `[d]ownload` - already implemented!
   - `[g]lobal-leaderboard` - show [global leaderboard](https://adventofcode.com/2022/leaderboard).

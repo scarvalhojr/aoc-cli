@@ -15,7 +15,7 @@ const DEFAULT_COL_WIDTH: usize = 80;
 fn main() -> Result<(), String> {
     let args = Args::parse();
 
-    let session = read_session_cookie(args.session_file);
+    let session = read_session_cookie(&args.session_file);
 
     let width = args
         .width
@@ -23,28 +23,15 @@ fn main() -> Result<(), String> {
         .unwrap_or(DEFAULT_COL_WIDTH);
 
     match &args.command {
-        Some(Command::Download) => download_input(
-            &session,
-            args.year,
-            args.day,
-            &args.input_file,
-            args.overwrite,
-        ),
+        Some(Command::Download) => download(&args, &session),
         Some(Command::Submit { part, answer }) => {
-            submit_answer(&session, args.year, args.day, part, answer, width)
+            submit(&args, &session, width, part, answer)
         }
-        _ => read_puzzle(
-            &session,
-            args.year,
-            args.day,
-            width,
-            &args.puzzle_file,
-            args.overwrite,
-        ),
+        _ => read(&args, &session, width),
     }
 }
 
-fn read_session_cookie(session_file: Option<String>) -> String {
+fn read_session_cookie(session_file: &Option<String>) -> String {
     let path = if let Some(file) = session_file {
         PathBuf::from(file)
     } else if let Some(dir) = home_dir() {

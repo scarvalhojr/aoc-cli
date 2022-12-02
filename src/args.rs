@@ -25,9 +25,17 @@ pub struct Args {
     #[arg(short, long, global = true, value_parser = valid_width)]
     pub width: Option<usize>,
 
-    /// Overwrite file if it already exists
+    /// Overwrite files if they already exist
     #[arg(short, long, global = true)]
     pub overwrite: bool,
+
+    /// Download puzzle input only
+    #[arg(short = 'I', long, global = true)]
+    pub input_only: bool,
+
+    /// Download puzzle description only
+    #[arg(short = 'D', long, global = true, conflicts_with = "input_only")]
+    pub description_only: bool,
 
     /// Path where to save puzzle input
     #[arg(
@@ -58,7 +66,7 @@ pub enum Command {
     #[command(visible_alias = "r")]
     Read,
 
-    /// Download puzzle input
+    /// Save puzzle description and input to files
     #[command(visible_alias = "d")]
     Download,
 

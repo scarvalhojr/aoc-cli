@@ -96,13 +96,13 @@ directory. This file should only contain your session number, in a single line.
 ```
 # aoc help
 
-Advent of Code command-line helper tool
+Advent of Code command-line tool
 
 Usage: aoc [OPTIONS] [COMMAND]
 
 Commands:
   read      Read puzzle statement (the default command) [aliases: r]
-  download  Download puzzle input [aliases: d]
+  download  Save puzzle description and input to files [aliases: d]
   submit    Submit puzzle answer [aliases: s]
   help      Print this message or the help of the given subcommand(s)
 
@@ -111,7 +111,9 @@ Options:
   -y, --year <YEAR>          Puzzle year [default: year of current or last Advent of Code event]
   -s, --session-file <PATH>  Path to session cookie file [default: ~/.adventofcode.session]
   -w, --width <WIDTH>        Width at which to wrap output [default: terminal width]
-  -o, --overwrite            Overwrite file if it already exists
+  -o, --overwrite            Overwrite files if they already exist
+  -I, --input-only           Download puzzle input only
+  -D, --description-only     Download puzzle description only
   -i, --input-file <PATH>    Path where to save puzzle input [default: input]
   -p, --puzzle-file <PATH>   Path where to save puzzle description [default: puzzle.md]
   -h, --help                 Print help information
@@ -123,46 +125,56 @@ Options:
 
 Submit puzzle answer
 
-Usage: aoc submit <PART> <ANSWER>
+Usage: aoc submit [OPTIONS] <PART> <ANSWER>
 
 Arguments:
   <PART>    Puzzle part [possible values: 1, 2]
   <ANSWER>  Puzzle answer
 
 Options:
-  -h, --help  Print help information
+  -d, --day <DAY>            Puzzle day [default: last unlocked day (during Advent of Code month)]
+  -y, --year <YEAR>          Puzzle year [default: year of current or last Advent of Code event]
+  -s, --session-file <PATH>  Path to session cookie file [default: ~/.adventofcode.session]
+  -w, --width <WIDTH>        Width at which to wrap output [default: terminal width]
+  -o, --overwrite            Overwrite files if they already exist
+  -I, --input-only           Download puzzle input only
+  -D, --description-only     Download puzzle description only
+  -i, --input-file <PATH>    Path where to save puzzle input [default: input]
+  -p, --puzzle-file <PATH>   Path where to save puzzle description [default: puzzle.md]
+  -h, --help                 Print help information
 ```
 
 ### Read puzzle description
 
 Read today's puzzle (if today is an Advent of Code day) in plain text from the
-comfort of your terminal. This command also saves the puzzle description to a
-file in Markdown format.
+comfort of your terminal.
 
 ```
 # aoc read
 
-## --- Day 5: Binary Boarding ---
+Loaded session cookie from "/home/user/.adventofcode.session".
 
-You board your plane only to discover a new problem: you dropped your boarding
-pass! You aren't sure which seat is yours, and all of the flight attendants are
-busy with the flood of people that suddenly made it through passport control.
+## --- Day 2: Rock Paper Scissors ---
+
+The Elves begin to set up camp on the beach. To decide whose tent gets to be
+closest to the snack storage, a giant [Rock Paper Scissors][1] tournament is
+already in progress.
 ...
-
-Saving puzzle description to "puzzle.md"...
-Done!
 ```
 
 ### Download puzzle input
 
-Download input for today's puzzle and save it to a file named "input" on the
-current directory:
+Download description and input for today's puzzle and save them to files. By
+default the description is saved to "puzzle.md" and the input is saved to
+"input" in the current directory:
 
 ```
 # aoc download
 
 Loaded session cookie from "/home/user/.adventofcode.session".
-Downloading input for day 5, 2020...
+Fetching puzzle for day 2, 2022...
+Saving puzzle description to "puzzle.md"...
+Downloading input for day 2, 2022...
 Saving puzzle input to "input"...
 Done!
 ```
@@ -176,11 +188,11 @@ Submit the answer to part 1 of today's puzzle (in this example, the answer is
 # aoc submit 1 999
 
 Loaded session cookie from "/home/user/.adventofcode.session".
-Submitting answer for part 1, day 5, 2020...
+Submitting answer for part 1, day 2, 2022...
 
 That's the right answer! You are one gold star closer to saving your vacation. [[Continue to Part Two]][1]
 
-[1] /2020/day/5#part2
+[1] /2022/day/2#part2
 ```
 
 ### Command abbreviations
@@ -192,25 +204,20 @@ Any prefix of a command can be used instead of the full command name. For instan
 
 ### More examples
 
-Download the input from a previous day (assumes the current year):
+Download puzzle from a previous day (assumes the current year):
 
 ```
 # aoc download --day 1
-
-Loaded session cookie from "/home/user/.adventofcode.session".
-Downloading input for day 1, 2020...
-Saving puzzle input to "input"...
-Done!
 ```
 
-Download the input from a previous year and save it to a file with a given
+Download puzzle input from a previous year and save it to a file with a given
 name:
 
 ```
-# aoc download --year 2015 --day 1 --input-file /home/user/aoc/2015/1/input
+# aoc download --year 2015 --day 1 --input-only --input-file /home/user/aoc/2015/1/input
 ```
 
-An attempt to download the input of a puzzle that is still locked fails
+An attempt to download a puzzle that is still locked fails
 (puzzles unlock every day between 1st and 25th of December at midnight
 EST/UTC-5):
 
