@@ -89,7 +89,11 @@ obtain your session cookie, login to the
 [Advent of Code](https://adventofcode.com) website and inspect the `session`
 value of the cookie that gets stored in your browser. Put the session number (a
 long hex string) either in a file called `.adventofcode.session` in your home
-directory or `adventofcode.session` in your users config directory (`~/.config` on Linux, `~/Library/Application Support` on macOS or `~\AppData\Roaming` on Windows). This file should only contain your session number, in a single line.
+directory or `adventofcode.session` in your users config directory (`~/.config`
+on Linux, `~/Library/Application Support` on macOS or `~\AppData\Roaming` on
+Windows). This file should only contain your session number, in a single line.
+Alternatively you can export your session as the environment variable
+`ADVENT_OF_CODE_SESSION`.
 
 ## Usage
 
