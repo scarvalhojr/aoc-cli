@@ -65,6 +65,14 @@ pub struct Args {
         default_value = "puzzle.md"
     )]
     pub puzzle_file: String,
+
+    /// Restrict log messages to errors only
+    #[arg(short, long, global = true)]
+    pub quiet: bool,
+
+    /// Enable debug logging
+    #[arg(long, global = true, conflicts_with = "quiet")]
+    pub debug: bool,
 }
 
 #[derive(Subcommand, Debug)]

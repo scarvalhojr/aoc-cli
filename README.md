@@ -5,12 +5,13 @@
 [![Release](https://github.com/scarvalhojr/aoc-cli/actions/workflows/release.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/release.yml)
 [![crates.io](https://img.shields.io/crates/v/aoc-cli.svg)](https://crates.io/crates/aoc-cli)
 
-[Advent of Code](https://adventofcode.com) command-line tool.
+## Advent of Code command-line tool 🎄
 
-Read Advent of Code puzzle descriptions, download puzzle input, submit answers
-and check if they are correct, all from the comfort of your terminal.
+Read [Advent of Code](https://adventofcode.com) puzzle descriptions, download
+puzzle input, submit answers and check if they are correct, all from the
+comfort of your terminal.
 
-## Features
+## Features ⭐️
 
 - Validate arguments (year, day, part) and check if puzzle is unlocked.
 - Infer puzzle day when possible (last unlocked puzzle during Advent of Code
@@ -20,7 +21,7 @@ and check if they are correct, all from the comfort of your terminal.
 - Load Advent of Code session cookie from a file.
 - Save puzzle description to a file in Markdown format.
 
-## Installation options
+## Installation options 🎅
 
 ### Compile from source
 
@@ -81,7 +82,7 @@ runtime libraries.
 * i686 32-bit Windows MSVC (Windows 7 or newer) - `aoc-cli-<version>-i686-pc-windows-msvc.zip`
 * i686 32-bit Windows MinGW (Windows 7 or newer) - `aoc-cli-<version>-i686-pc-windows-gnu.zip`
 
-## Session cookie
+## Session cookie 🍪
 
 Different Advent of Code users get different puzzle input. To download your
 input and submit your answer, you need an adventofcode.com session cookie. To
@@ -101,7 +102,7 @@ line breaks) in one of the following ways (listed in order of precedence):
    directory (`/home/alice/.config` on Linux, `C:\Users\Alice\AppData\Roaming`
    on Windows, `/Users/Alice/Library/Application Support` on macOS).
 
-## Usage
+## Usage ⛄️
 
 ```
 # aoc help
@@ -123,9 +124,11 @@ Options:
   -w, --width <WIDTH>        Width at which to wrap output [default: terminal width]
   -o, --overwrite            Overwrite files if they already exist
   -I, --input-only           Download puzzle input only
-  -D, --puzzle-only          Download puzzle description only
+  -P, --puzzle-only          Download puzzle description only
   -i, --input-file <PATH>    Path where to save puzzle input [default: input]
   -p, --puzzle-file <PATH>   Path where to save puzzle description [default: puzzle.md]
+  -q, --quiet                Restrict log messages to errors only
+      --debug                Enable debug logging
   -h, --help                 Print help information
   -V, --version              Print version information
 ```
@@ -148,9 +151,11 @@ Options:
   -w, --width <WIDTH>        Width at which to wrap output [default: terminal width]
   -o, --overwrite            Overwrite files if they already exist
   -I, --input-only           Download puzzle input only
-  -D, --puzzle-only          Download puzzle description only
+  -P, --puzzle-only          Download puzzle description only
   -i, --input-file <PATH>    Path where to save puzzle input [default: input]
   -p, --puzzle-file <PATH>   Path where to save puzzle description [default: puzzle.md]
+  -q, --quiet                Restrict log messages to errors only
+      --debug                Enable debug logging
   -h, --help                 Print help information
 ```
 
@@ -162,7 +167,7 @@ comfort of your terminal.
 ```
 # aoc read
 
-Loaded session cookie from "/home/user/.adventofcode.session".
+[INFO  aoc] 🎄 aoc-cli - Advent of Code command-line tool
 
 ## --- Day 2: Rock Paper Scissors ---
 
@@ -181,12 +186,9 @@ default the description is saved to "puzzle.md" and the input is saved to
 ```
 # aoc download
 
-Loaded session cookie from "/home/user/.adventofcode.session".
-Fetching puzzle for day 2, 2022...
-Saving puzzle description to "puzzle.md"...
-Downloading input for day 2, 2022...
-Saving puzzle input to "input"...
-Done!
+[INFO  aoc] 🎄 aoc-cli - Advent of Code command-line tool
+[INFO  aoc::aoc] 🎅 Saved puzzle description to 'puzzle.md'
+[INFO  aoc::aoc] 🎅 Saved puzzle input to 'input'
 ```
 
 ### Submit puzzle answers
@@ -197,8 +199,7 @@ Submit the answer to part 1 of today's puzzle (in this example, the answer is
 ```
 # aoc submit 1 999
 
-Loaded session cookie from "/home/user/.adventofcode.session".
-Submitting answer for part 1, day 2, 2022...
+[INFO  aoc] 🎄 aoc-cli - Advent of Code command-line tool
 
 That's the right answer! You are one gold star closer to saving your vacation. [[Continue to Part Two]][1]
 
@@ -234,8 +235,8 @@ EST/UTC-5):
 ```
 # aoc download --year 2030 --day 25
 
-Loaded session cookie from "/home/user/.adventofcode.session".
-Error: Puzzle 25 of 2030 is still locked.
+[INFO  aoc] 🎄 aoc-cli - Advent of Code command-line tool
+[ERROR aoc] 🔔 Puzzle 25 of 2030 is still locked
 ```
 
 Submit the answer to a previous year:
@@ -248,12 +249,12 @@ Specify path to session cookie file:
 # aoc download --session-file /tmp/.aoc.session
 ```
 
-## Contribute
+## Contribute 🦌
 
 Feedback and pull requests are welcome. Please see [CONTRIBUTING](CONTRIBUTING.md)
 for guidelines and ideas.
 
-## Support Advent of Code
+## Support Advent of Code 🎁
 
 Advent of Code is a free online Advent calendar of small programming puzzles
 created by [Eric Wastl](http://was.tl/) and maintained by volunteers. Please
