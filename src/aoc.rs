@@ -165,6 +165,7 @@ fn save_file(
     };
 
     file.write(true)
+        .truncate(true)
         .open(filename)
         .map_err(|err| format!("Failed to create file: {}", err))?
         .write(contents.as_bytes())
