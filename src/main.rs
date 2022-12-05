@@ -4,12 +4,12 @@ mod args;
 use aoc::*;
 use args::*;
 use clap::Parser;
-use home::home_dir;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::process::exit;
 
-const SESSION_COOKIE_FILE: &str = ".adventofcode.session";
+const SESSION_COOKIE_FILE: &str = "adventofcode.session";
+const HIDDEN_SESSION_COOKIE_FILE: &str = ".adventofcode.session";
 const DEFAULT_COL_WIDTH: usize = 80;
 
 fn main() -> Result<(), String> {
@@ -34,10 +34,15 @@ fn main() -> Result<(), String> {
 fn read_session_cookie(session_file: &Option<String>) -> String {
     let path = if let Some(file) = session_file {
         PathBuf::from(file)
-    } else if let Some(dir) = home_dir() {
+    } else if let Some(file) = dirs::home_dir()
+        .map(|dir| dir.join(HIDDEN_SESSION_COOKIE_FILE))
+        .filter(|file| file.exists())
+    {
+        file
+    } else if let Some(dir) = dirs::config_dir() {
         dir.join(SESSION_COOKIE_FILE)
     } else {
-        eprintln!("error: Failed to find home directory.");
+        eprintln!("error: Failed to find config directory.");
         exit(2);
     };
 

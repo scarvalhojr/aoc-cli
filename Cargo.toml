@@ -17,12 +17,12 @@ path = "src/main.rs"
 [dependencies]
 chrono = "0.4"
 clap = { version = "4", features = ["color", "derive"]}
-home = "0.5"
 html2text = "0.4"
 regex = "1.7"
 reqwest = { version = "0.11", features = ["blocking"] }
 term_size = "0.3"
 html2md = "0.2"
+dirs = "4.0.0"
 
 # Use static linking of OpenSSL on Linux with MUSL
 [target.x86_64-unknown-linux-musl.dependencies]
