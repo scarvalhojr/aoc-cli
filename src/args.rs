@@ -34,8 +34,15 @@ pub struct Args {
     pub input_only: bool,
 
     /// Download puzzle description only
-    #[arg(short = 'D', long, global = true, conflicts_with = "input_only")]
-    pub description_only: bool,
+    #[arg(
+        short = 'P',
+        short_alias = 'D',
+        long,
+        alias = "description-only",
+        global = true,
+        conflicts_with = "input_only"
+    )]
+    pub puzzle_only: bool,
 
     /// Path where to save puzzle input
     #[arg(

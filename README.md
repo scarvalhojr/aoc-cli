@@ -87,13 +87,19 @@ Different Advent of Code users get different puzzle input. To download your
 input and submit your answer, you need an adventofcode.com session cookie. To
 obtain your session cookie, login to the
 [Advent of Code](https://adventofcode.com) website and inspect the `session`
-value of the cookie that gets stored in your browser. Put the session number (a
-long hex string) either in a file called `.adventofcode.session` in your home
-directory or `adventofcode.session` in your users config directory (`~/.config`
-on Linux, `~/Library/Application Support` on macOS or `~\AppData\Roaming` on
-Windows). This file should only contain your session number, in a single line.
-Alternatively you can export your session as the environment variable
-`ADVENT_OF_CODE_SESSION`.
+value of the cookie that gets stored in your browser - see instructions
+[here](https://www.cookieyes.com/blog/how-to-check-cookies-on-your-website-manually).
+
+The session cookie (a long hex string) must be provided in a single line (no
+line breaks) in one of the following ways (listed in order of precedence):
+1. In a file specified via the `--session-file` command line option.
+2. In an `ADVENT_OF_CODE_SESSION` environment variable.
+3. In a file called `.adventofcode.session` (note the dot) in your home
+   directory (`/home/alice` on Linux, `C:\Users\Alice` on Windows,
+   `/Users/Alice` on macOS).
+4. In a file called `adventofcode.session` (no dot) in your user's config
+   directory (`/home/alice/.config` on Linux, `C:\Users\Alice\AppData\Roaming`
+   on Windows, `/Users/Alice/Library/Application Support` on macOS).
 
 ## Usage
 
@@ -117,7 +123,7 @@ Options:
   -w, --width <WIDTH>        Width at which to wrap output [default: terminal width]
   -o, --overwrite            Overwrite files if they already exist
   -I, --input-only           Download puzzle input only
-  -D, --description-only     Download puzzle description only
+  -D, --puzzle-only          Download puzzle description only
   -i, --input-file <PATH>    Path where to save puzzle input [default: input]
   -p, --puzzle-file <PATH>   Path where to save puzzle description [default: puzzle.md]
   -h, --help                 Print help information
@@ -142,7 +148,7 @@ Options:
   -w, --width <WIDTH>        Width at which to wrap output [default: terminal width]
   -o, --overwrite            Overwrite files if they already exist
   -I, --input-only           Download puzzle input only
-  -D, --description-only     Download puzzle description only
+  -D, --puzzle-only          Download puzzle description only
   -i, --input-file <PATH>    Path where to save puzzle input [default: input]
   -p, --puzzle-file <PATH>   Path where to save puzzle description [default: puzzle.md]
   -h, --help                 Print help information
@@ -244,7 +250,8 @@ Specify path to session cookie file:
 
 ## Contribute
 
-Feedback and pull requests are welcome.
+Feedback and pull requests are welcome. Please see [CONTRIBUTING](CONTRIBUTING.md)
+for guidelines and ideas.
 
 ## Support Advent of Code
 

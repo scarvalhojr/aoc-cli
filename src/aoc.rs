@@ -182,7 +182,7 @@ pub fn download(args: &Args, session_cookie: &str) -> Result<(), String> {
         save_file(&args.puzzle_file, args.overwrite, &parse_html(&desc))?;
     }
 
-    if !args.description_only {
+    if !args.puzzle_only {
         let input = get_input(session_cookie, year, day)?;
         eprintln!("Saving puzzle input to \"{}\"...", args.input_file);
         save_file(&args.input_file, args.overwrite, &input)?;
