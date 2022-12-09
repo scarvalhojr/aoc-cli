@@ -30,8 +30,6 @@ In particular, the commit message should start with one of the following types:
   - input-filename
   - description-filename
 
-- Detect when session cookie is expired (currently user gets a HTTP 500 error).
-
 - Warn user if session file permissions allow reading by others.
 
 - Add option to wait until the next puzzle unlocks with a countdown timer (for

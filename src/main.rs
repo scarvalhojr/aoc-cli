@@ -6,6 +6,7 @@ use args::*;
 use clap::{crate_description, crate_name, Parser};
 use env_logger::{Builder, Env};
 use exit_code::*;
+use http::StatusCode;
 use log::{error, info, LevelFilter};
 use std::process::exit;
 
@@ -29,7 +30,19 @@ fn main() {
                 AocError::MissingConfigDir => NO_INPUT,
                 AocError::SessionFileReadError { .. } => IO_ERROR,
                 AocError::InvalidSessionCookie { .. } => DATA_ERROR,
-                AocError::HttpRequestError { .. } => FAILURE,
+                AocError::HttpRequestError { source } => {
+                    if let Some(StatusCode::INTERNAL_SERVER_ERROR) =
+                        source.status()
+                    {
+                        // adventofcode.com returns HTTP 500 when session cookie
+                        // is no longer valid
+                        error!(
+                            "🔔 Your session cookie may have expired, try \
+                            logging in again"
+                        );
+                    }
+                    FAILURE
+                }
                 AocError::AocResponseError => FAILURE,
                 AocError::FileWriteError { .. } => CANNOT_CREATE,
             };

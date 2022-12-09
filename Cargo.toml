@@ -22,6 +22,7 @@ exit-code = "1.0"
 env_logger = "0.10"
 html2md = "0.2"
 html2text = "0.4"
+http = "0.2"
 log = "0.4"
 regex = "1.7"
 reqwest = { version = "0.11", features = ["blocking"] }
