@@ -77,6 +77,9 @@ fn run(args: &Args) -> AocResult<()> {
         Some(Command::Submit { part, answer }) => {
             submit(args, &session, width, part, answer)
         }
+        Some(Command::PrivateLeaderboard { leaderboard }) => {
+            show_private_leaderboard_results(args, &session, leaderboard)
+        }
         _ => read(args, &session, width),
     }
 }

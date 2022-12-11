@@ -95,6 +95,10 @@ pub enum Command {
         /// Puzzle answer
         answer: String,
     },
+
+    /// Get private leaderboard results
+    #[command(visible_alias = "pr")]
+    PrivateLeaderboard { leaderboard: String },
 }
 
 fn convert_number<T: FromStr>(s: &str) -> Result<T, String>
