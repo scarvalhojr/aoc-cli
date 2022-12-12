@@ -32,6 +32,7 @@ it finds, and make sure your code is properly formatted with `cargo fmt`.
   - width
   - input-filename
   - description-filename
+  - private leaderboard ID
 
 - Warn user if session file permissions allow reading by others.
 
@@ -39,7 +40,7 @@ it finds, and make sure your code is properly formatted with `cargo fmt`.
   read and download commands).
 
 - Commands:
-  - `[c]alendar` - show progress calendar (stars collected each day).
+  - `[c]alendar` - already implemented!
   - `[d]ownload` - already implemented!
   - `[g]lobal-leaderboard` - show [global leaderboard](https://adventofcode.com/2022/leaderboard).
   - `[i]nit` - prompt for each configurable option (offering sensible defaults)
@@ -53,5 +54,7 @@ it finds, and make sure your code is properly formatted with `cargo fmt`.
   - `[su]bmit` - already implemented!
   - `[u]nset-config` - restore default settings in configuratio file
     (e.g. `aoc unset-config year`).
+
+- Generate shell completion
 
 - Add tests!!!

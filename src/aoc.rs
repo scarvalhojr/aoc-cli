@@ -5,7 +5,7 @@ use dirs::{config_dir, home_dir};
 use html2md::parse_html;
 use html2text::from_read;
 use http::StatusCode;
-use log::{debug, info};
+use log::{debug, info, warn};
 use regex::Regex;
 use reqwest::blocking::Client;
 use reqwest::header::{
@@ -513,4 +513,104 @@ impl PartialEq for Member {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }
+}
+
+fn get_calendar(session_cookie: &str, year: PuzzleYear) -> AocResult<String> {
+    debug!("🦌 Fetching {year} calendar");
+
+    let url = format!("https://adventofcode.com/{year}");
+    let response = build_client(session_cookie, "text/html")?
+        .get(&url)
+        .send()?;
+
+    if response.status() == StatusCode::NOT_FOUND {
+        // A 402 reponse means the calendar for
+        // the requested year is not yet available
+        return Err(AocError::InvalidEventYear(year));
+    }
+
+    let contents = response.error_for_status()?.text()?;
+
+    if Regex::new(r#"href="/[0-9]{4}/auth/login""#)
+        .unwrap()
+        .is_match(&contents)
+    {
+        warn!("🍪 It looks like you are not logged in, try logging in again");
+    }
+
+    let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+        .unwrap()
+        .captures(&contents)
+        .ok_or(AocError::AocResponseError)?
+        .name("main")
+        .unwrap()
+        .as_str()
+        .to_string();
+
+    // Remove elements that won't render well in the terminal
+    let cleaned_up = Regex::new(concat!(
+        // Remove all hyperlinks
+        r#"(href="[^"]*")"#,
+        // Remove 2015 "calendar-bkg"
+        r#"|(<div class="calendar-bkg">[[:space:]]*"#,
+        r#"(<div>[^<]*</div>[[:space:]]*)*</div>)"#,
+        // Remove 2017 "naughty/nice" animation
+        r#"|(<div class="calendar-printer">(?s:.)*"#,
+        r#"\|O\|</span></div>[[:space:]]*)"#,
+        // Remove 2018 "space mug"
+        r#"|(<pre id="spacemug"[^>]*>[^<]*</pre>)"#,
+        // Remove 2019 shadows
+        r#"|(<span style="color[^>]*position:absolute"#,
+        r#"[^>]*>\.</span>)"#,
+        // Remove 2019 "sunbeam"
+        r#"|(<span class="sunbeam"[^>]*>"#,
+        r#"<span style="animation-delay[^>]*>\*</span></span>)"#,
+    ))
+    .unwrap()
+    .replace_all(&main, "")
+    .to_string();
+
+    let class_regex =
+        Regex::new(r#"<a [^>]*class="(?P<class>[^"]*)""#).unwrap();
+    let star_regex = Regex::new(concat!(
+        r#"(?P<stars><span class="calendar-mark-complete">\*</span>"#,
+        r#"<span class="calendar-mark-verycomplete">\*</span>)"#,
+    ))
+    .unwrap();
+
+    // Remove stars that have not been collected
+    let calendar = cleaned_up
+        .lines()
+        .map(|line| {
+            let class = class_regex
+                .captures(line)
+                .and_then(|c| c.name("class"))
+                .map(|c| c.as_str())
+                .unwrap_or("");
+
+            let stars = if class.contains("calendar-verycomplete") {
+                "**"
+            } else if class.contains("calendar-complete") {
+                "*"
+            } else {
+                ""
+            };
+
+            star_regex.replace(line, stars)
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    Ok(calendar)
+}
+
+pub fn calendar(
+    args: &Args,
+    session_cookie: &str,
+    col_width: usize,
+) -> AocResult<()> {
+    let year = args.year.unwrap_or_else(latest_event_year);
+    let desc = get_calendar(session_cookie, year)?;
+    println!("\n{}", from_read(desc.as_bytes(), col_width));
+    Ok(())
 }

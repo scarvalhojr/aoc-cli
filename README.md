@@ -20,6 +20,7 @@ comfort of your terminal.
   Code event.
 - Load Advent of Code session cookie from a file.
 - Save puzzle description to a file in Markdown format.
+- Check your progress in your Advent of Code calendar.
 - Show the state of private leaderboards.
 
 ## Installation options 🎅
@@ -113,8 +114,9 @@ Advent of Code command-line tool
 Usage: aoc [OPTIONS] [COMMAND]
 
 Commands:
-  read                 Read puzzle statement (the default command) [aliases: r]
+  calendar             Show Advent of Code calendar and stars collected [aliases: c]
   download             Save puzzle description and input to files [aliases: d]
+  read                 Read puzzle statement (the default command) [aliases: r]
   submit               Submit puzzle answer [aliases: s]
   private-leaderboard  Show the state of a private leaderboard [aliases: p]
   help                 Print this message or the help of the given subcommand(s)
@@ -208,6 +210,45 @@ That's the right answer! You are one gold star closer to saving your vacation. [
 [1] /2022/day/2#part2
 ```
 
+### See your Advent of Code calendar
+
+Check your progress in your very own calendar. You can even check past events:
+
+```
+# aoc calendar --year 2015
+
+[INFO  aoc] 🎄 aoc-cli - Advent of Code command-line tool
+
+                        *                          25
+                       >o<                         24
+                      >o<<<                        23
+                     >>O<<o<                       22
+                    >>o>O>>@<                      21
+                   >O<o>>@>>*<                     20
+                  >o>*<<<O<o>O<                    19
+                 >>o<@<<<o>>>o<<                   18
+                >>*>o>>>*>>>O<<<<                  17
+               >*<@>>>*>>O>o<o>@<<                 16
+              >O>>>O<<@<<o>>>@>>>O<                15
+             >>O>>*>>@<<o<<<@>>>*>O<               14
+            >O<<<@>>o>O>o<<@>>O>>o>*<              13
+           >>@>>O>>*<O<o<<O<*<<<*<*<<<             12
+          >>*>>>*<<<O<<@>>O>>>o<<<o<<*<            11
+         >*>>>*<<@>>@<<<@<<o<o<<<@<<<*<<           10
+        >>o>>>*<<@<<@<<<O>O<<<@>>>O>O<<<<           9
+       >>o>*<<o>>o<<<*<<@>>o<<<@>@<<<@<<<<          8
+      >@>>>@<o<<<@>>*<O<<<o<<O>>>o>*<<O<o<<         7
+     >o>>*>*<<@>*<<<o>*>>>@<O<<*>>>@<<*<o>o<        6
+    >>o<<*<<<*>*<<<*<<*<o<<*>>>*>>>o>>O>*<<<<       5 **
+   >O>>>o<<<o>O<<<O>*>o<O>>o>>O<o>O>@<@>>o<<<<      4 **
+  >@>O<<<o>>*>>*<<O>o<*<<o<<o>>>@>>>*<<@>o<<<o<     3 **
+ >>@<<<@<<<@<<<O<<*>o>O<<<O>>o<@>o<<<*>*>>>O>>O<    2 **
+>O>>>O>*>>>@<*>>>@>@<<*<@<<o>>>o>>>@>>o>@>>*>>O<<   1 **
+                      |   |
+                      |   |
+           _  _ __ ___|___|___ __ _  _
+```
+
 ### Show private leaderboard
 
 If you are a member of a [private leaderboard](https://adventofcode.com/leaderboard/private),
@@ -237,11 +278,12 @@ silver * means just the first star, and a gray dot (.) means none.
 ### Command abbreviations
 
 Any non-ambiguous prefix of a command can be used instead of the full command
-name. For instance:
-- Instead of `aoc read`, type `aoc r`, `aoc re` or `aoc rea`.
-- Instead of `aoc download`, type `aoc d`, `aoc do`, `aoc dow`, `aoc down`, etc.
-- Instead of `aoc submit`, type `aoc s`, `aoc su`, `aoc sub`, etc.
-- Instead of `aoc private-leaderboard`, type `aoc p`, `aoc pr`, `aoc pri` etc.
+name. For instance, instead of `aoc read`, you can type `aoc r`, `aoc re` or
+`aoc rea`. Similarly:
+- Instead of `calendar`, type `c`, `ca`, `cal`, etc.
+- Instead of `download`, type `d`, `do`, `dow`, `down`, etc.
+- Instead of `private-leaderboard`, type `p`, `pr`, `pri` etc.
+- Instead of `submit`, type `s`, `su`, `sub`, etc.
 
 ### More examples
 

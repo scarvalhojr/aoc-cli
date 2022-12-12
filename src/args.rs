@@ -77,13 +77,17 @@ pub struct Args {
 
 #[derive(Subcommand, Debug)]
 pub enum Command {
-    /// Read puzzle statement (the default command)
-    #[command(visible_alias = "r")]
-    Read,
+    /// Show Advent of Code calendar and stars collected
+    #[command(visible_alias = "c")]
+    Calendar,
 
     /// Save puzzle description and input to files
     #[command(visible_alias = "d")]
     Download,
+
+    /// Read puzzle statement (the default command)
+    #[command(visible_alias = "r")]
+    Read,
 
     /// Submit puzzle answer
     #[command(visible_alias = "s")]

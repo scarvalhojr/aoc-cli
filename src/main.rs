@@ -72,6 +72,7 @@ fn run(args: &Args) -> AocResult<()> {
         .unwrap_or(DEFAULT_COL_WIDTH);
 
     match &args.command {
+        Some(Command::Calendar) => calendar(args, &session, width),
         Some(Command::Download) => download(args, &session),
         Some(Command::Submit { part, answer }) => {
             submit(args, &session, width, part, answer)
