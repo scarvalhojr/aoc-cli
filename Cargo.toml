@@ -25,7 +25,8 @@ html2text = "0.4"
 http = "0.2"
 log = "0.4"
 regex = "1.7"
-reqwest = { version = "0.11", features = ["blocking"] }
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+serde = { version = "1.0", features=["derive"] }
 term_size = "0.3"
 thiserror = "1.0"
 

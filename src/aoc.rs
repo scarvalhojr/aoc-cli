@@ -11,6 +11,9 @@ use reqwest::header::{
     USER_AGENT,
 };
 use reqwest::redirect::Policy;
+use serde::Deserialize;
+use std::cmp::Reverse;
+use std::collections::HashMap;
 use std::env;
 use std::fs::{read_to_string, OpenOptions};
 use std::io::Write;
@@ -316,4 +319,104 @@ pub fn read(
     let desc = get_description(session_cookie, year, day)?;
     println!("\n{}", from_read(desc.as_bytes(), col_width));
     Ok(())
+}
+
+fn get_private_leaderboard_results(
+    args: &Args,
+    session: &str,
+    leaderboard: &str,
+    year: PuzzleYear,
+) -> AocResult<PrivateLeaderboard> {
+    debug!("🦌 Fetching private leaderboard {}", leaderboard);
+
+    let url = format!(
+        "https://adventofcode.com/{}/leaderboard/private/view/{}.json",
+        year, leaderboard
+    );
+
+    let leaderboard: PrivateLeaderboard =
+        build_client(session, "application/json")?
+            .get(&url)
+            .send()
+            .and_then(|response| response.error_for_status())
+            .and_then(|response| response.json())
+            .map_err(AocError::from)?;
+    Ok(leaderboard)
+}
+
+pub fn show_private_leaderboard_results(
+    args: &Args,
+    session: &str,
+    leaderboard: &str,
+) -> AocResult<()> {
+    let (year, day) = puzzle_year_day(args.year, args.day)?;
+    let leaderboard =
+        get_private_leaderboard_results(args, session, leaderboard, year)?;
+
+    let mut members: Vec<_> = leaderboard.members.values().collect();
+    members.sort_by_key(|m| Reverse(m.local_score));
+    members.iter().enumerate().for_each(|(idx, m)| {
+        let display_name = m
+            .name
+            .clone()
+            .unwrap_or(format!("anonymous user #{}", m.id));
+
+        let stars: String = (1..=25)
+            .map(|d| {
+                if d > day {
+                    ' '
+                } else {
+                    let stars = m.stars_per_day(d);
+                    match stars {
+                        2 => '★',
+                        1 => '☆',
+                        _ => '.',
+                    }
+                }
+            })
+            .collect();
+
+        let order = idx + 1;
+        println!("{}\t{}\t{}\t{}", order, m.local_score, stars, display_name);
+    });
+
+    Ok(())
+}
+
+#[derive(Deserialize)]
+struct PrivateLeaderboard {
+    owner_id: usize,
+    event: String,
+    members: HashMap<String, Member>,
+}
+
+#[derive(Deserialize)]
+struct Member {
+    name: Option<String>,
+    id: u64,
+    global_score: u64,
+    local_score: u64,
+    stars: u8,
+    completion_day_level: HashMap<u32, DayLevel>,
+}
+
+impl Member {
+    fn stars_per_day(&self, day: u32) -> u8 {
+        self.completion_day_level
+            .get(&day)
+            .map(|d| d.stars.len() as u8)
+            .unwrap_or(0)
+    }
+}
+
+#[derive(Deserialize)]
+struct DayLevel {
+    #[serde(flatten)]
+    stars: HashMap<String, Star>,
+}
+
+#[derive(Deserialize)]
+struct Star {
+    get_star_ts: u64,
+    star_index: u64,
 }
