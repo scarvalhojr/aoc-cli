@@ -19,6 +19,9 @@ In particular, the commit message should start with one of the following types:
 - **build**: Changes that affect the build system or external dependencies
 - **ci**: Changes to CI or release configuration files and scripts
 
+Before submitting your code, please run `cargo clippy` and resolve any warnings
+it finds, and make sure your code is properly formatted with `cargo fmt`.
+
 # Ideas
 
 - Add a configuration file (in home or `.config` directory) that can store
@@ -43,7 +46,7 @@ In particular, the commit message should start with one of the following types:
     and create a configuration file.
   - `[l]ogin` - prompt for session cookie and save it in a user-protected file.
   - `[pe]rsonal-stats` - show [personal stats](https://adventofcode.com/2022/leaderboard/self).
-  - `[pr]ivate-leaderboard` - show [private leaderboards](https://adventofcode.com/2022/leaderboard/private).
+  - `[pr]ivate-leaderboard` - already implemented!
   - `[r]ead` - already implemented!
   - `[se]t-config` - make changes to configuration file (e.g. `aoc set-config year 2015`).
   - `[st]ats` - show [event stats](https://adventofcode.com/2022/stats).

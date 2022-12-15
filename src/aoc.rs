@@ -3,6 +3,7 @@ use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
 use dirs::{config_dir, home_dir};
 use html2md::parse_html;
 use html2text::from_read;
+use http::StatusCode;
 use log::{debug, info};
 use regex::Regex;
 use reqwest::blocking::Client;
@@ -12,7 +13,7 @@ use reqwest::header::{
 };
 use reqwest::redirect::Policy;
 use serde::Deserialize;
-use std::cmp::Reverse;
+use std::cmp::{Ordering, Reverse};
 use std::collections::HashMap;
 use std::env;
 use std::fs::{read_to_string, OpenOptions};
@@ -22,6 +23,8 @@ use thiserror::Error;
 
 pub type PuzzleYear = i32;
 pub type PuzzleDay = u32;
+pub type MemberId = u64;
+pub type Score = u64;
 
 const FIRST_EVENT_YEAR: PuzzleYear = 2015;
 const DECEMBER: u32 = 12;
@@ -42,6 +45,9 @@ pub type AocResult<T> = Result<T, AocError>;
 pub enum AocError {
     #[error("Invalid puzzle date: day {0}, year {1}")]
     InvalidPuzzleDate(PuzzleDay, PuzzleYear),
+
+    #[error("{0} is not a valid Advent of Code year")]
+    InvalidEventYear(PuzzleYear),
 
     #[error("Could not infer puzzle day for year {0}")]
     NonInferablePuzzleDate(PuzzleYear),
@@ -73,6 +79,9 @@ pub enum AocError {
 
     #[error("Failed to parse Advent of Code response")]
     AocResponseError,
+
+    #[error("The private leaderboard does not exist or you are not a member")]
+    PrivateLeaderboardNotAvailable,
 
     #[error("Failed to write to file '{filename}': {source}")]
     FileWriteError {
@@ -107,7 +116,11 @@ fn current_event_day(year: PuzzleYear) -> Option<PuzzleDay> {
         .from_utc_datetime(&Utc::now().naive_utc());
 
     if now.month() == DECEMBER && now.year() == year {
-        Some(now.day())
+        if now.day() > LAST_PUZZLE_DAY {
+            Some(LAST_PUZZLE_DAY)
+        } else {
+            Some(now.day())
+        }
     } else {
         None
     }
@@ -126,6 +139,22 @@ fn puzzle_unlocked(year: PuzzleYear, day: PuzzleDay) -> AocResult<bool> {
         Ok(now.signed_duration_since(time).num_milliseconds() >= 0)
     } else {
         Ok(false)
+    }
+}
+
+fn last_unlocked_day(year: PuzzleYear) -> AocResult<PuzzleDay> {
+    if let Some(day) = current_event_day(year) {
+        return Ok(day);
+    }
+
+    let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)
+        .unwrap()
+        .from_utc_datetime(&Utc::now().naive_utc());
+
+    if year >= FIRST_EVENT_YEAR && year < now.year() {
+        Ok(LAST_PUZZLE_DAY)
+    } else {
+        Err(AocError::InvalidEventYear(year))
     }
 }
 
@@ -321,53 +350,67 @@ pub fn read(
     Ok(())
 }
 
-fn get_private_leaderboard_results(
-    args: &Args,
+fn get_private_leaderboard(
     session: &str,
-    leaderboard: &str,
+    leaderboard_id: &str,
     year: PuzzleYear,
 ) -> AocResult<PrivateLeaderboard> {
-    debug!("🦌 Fetching private leaderboard {}", leaderboard);
+    debug!("🦌 Fetching private leaderboard {leaderboard_id}");
 
     let url = format!(
-        "https://adventofcode.com/{}/leaderboard/private/view/{}.json",
-        year, leaderboard
+        "https://adventofcode.com/{year}/leaderboard/private/view\
+        /{leaderboard_id}.json",
     );
 
-    let leaderboard: PrivateLeaderboard =
-        build_client(session, "application/json")?
-            .get(&url)
-            .send()
-            .and_then(|response| response.error_for_status())
-            .and_then(|response| response.json())
-            .map_err(AocError::from)?;
-    Ok(leaderboard)
+    let response = build_client(session, "application/json")?
+        .get(&url)
+        .send()
+        .and_then(|response| response.error_for_status())?;
+
+    if response.status() == StatusCode::FOUND {
+        // A 302 reponse is a redirect and it means
+        // the leaderboard doesn't exist or we can't access it
+        return Err(AocError::PrivateLeaderboardNotAvailable);
+    }
+
+    response.json().map_err(AocError::from)
 }
 
-pub fn show_private_leaderboard_results(
+pub fn private_leaderboard(
     args: &Args,
     session: &str,
-    leaderboard: &str,
+    leaderboard_id: &str,
 ) -> AocResult<()> {
-    let (year, day) = puzzle_year_day(args.year, args.day)?;
-    let leaderboard =
-        get_private_leaderboard_results(args, session, leaderboard, year)?;
+    let year = args.year.unwrap_or_else(latest_event_year);
+    let last_unlocked_day = last_unlocked_day(year)?;
+    let leaderboard = get_private_leaderboard(session, leaderboard_id, year)?;
+    let owner_name = leaderboard
+        .get_owner_name()
+        .ok_or(AocError::AocResponseError)?;
+
+    println!(
+        "Private leaderboard of {owner_name} for Advent of Code {year}.\n"
+    );
 
     let mut members: Vec<_> = leaderboard.members.values().collect();
-    members.sort_by_key(|m| Reverse(m.local_score));
-    members.iter().enumerate().for_each(|(idx, m)| {
-        let display_name = m
-            .name
-            .clone()
-            .unwrap_or(format!("anonymous user #{}", m.id));
+    members.sort_by_key(|member| Reverse(*member));
 
-        let stars: String = (1..=25)
-            .map(|d| {
-                if d > day {
+    let highest_score = members.first().map(|m| m.local_score).unwrap_or(0);
+    let score_width = highest_score.to_string().len();
+    let highest_rank = 1 + leaderboard.members.len();
+    let rank_width = highest_rank.to_string().len();
+    let header_pad: String =
+        vec![' '; rank_width + score_width].into_iter().collect();
+    println!("{header_pad}            1111111111222222");
+    println!("{header_pad}   1234567890123456789012345");
+
+    for (member, rank) in members.iter().zip(1..) {
+        let stars: String = (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY)
+            .map(|day| {
+                if day > last_unlocked_day {
                     ' '
                 } else {
-                    let stars = m.stars_per_day(d);
-                    match stars {
+                    match member.count_stars(day) {
                         2 => '★',
                         1 => '☆',
                         _ => '.',
@@ -376,47 +419,74 @@ pub fn show_private_leaderboard_results(
             })
             .collect();
 
-        let order = idx + 1;
-        println!("{}\t{}\t{}\t{}", order, m.local_score, stars, display_name);
-    });
+        println!(
+            "{rank:rank_width$}) {:score_width$} {stars}  {}",
+            member.local_score,
+            member.get_name(),
+        );
+    }
 
     Ok(())
 }
 
 #[derive(Deserialize)]
 struct PrivateLeaderboard {
-    owner_id: usize,
-    event: String,
-    members: HashMap<String, Member>,
+    owner_id: MemberId,
+    members: HashMap<MemberId, Member>,
 }
 
-#[derive(Deserialize)]
-struct Member {
-    name: Option<String>,
-    id: u64,
-    global_score: u64,
-    local_score: u64,
-    stars: u8,
-    completion_day_level: HashMap<u32, DayLevel>,
+impl PrivateLeaderboard {
+    fn get_owner_name(&self) -> Option<String> {
+        self.members.get(&self.owner_id).map(|m| m.get_name())
+    }
 }
+
+#[derive(Eq, Deserialize)]
+struct Member {
+    id: MemberId,
+    name: Option<String>,
+    local_score: Score,
+    completion_day_level: HashMap<PuzzleDay, DayLevel>,
+}
+
+type DayLevel = HashMap<String, CollectedStar>;
+
+#[derive(Eq, Deserialize, PartialEq)]
+struct CollectedStar {}
 
 impl Member {
-    fn stars_per_day(&self, day: u32) -> u8 {
+    fn get_name(&self) -> String {
+        self.name
+            .as_ref()
+            .cloned()
+            .unwrap_or(format!("(anonymous user #{})", self.id))
+    }
+
+    fn count_stars(&self, day: PuzzleDay) -> usize {
         self.completion_day_level
             .get(&day)
-            .map(|d| d.stars.len() as u8)
+            .map(|stars| stars.len())
             .unwrap_or(0)
     }
 }
 
-#[derive(Deserialize)]
-struct DayLevel {
-    #[serde(flatten)]
-    stars: HashMap<String, Star>,
+impl Ord for Member {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Members are sorted by increasing local score and then decreasing ID
+        self.local_score
+            .cmp(&other.local_score)
+            .then(self.id.cmp(&other.id).reverse())
+    }
 }
 
-#[derive(Deserialize)]
-struct Star {
-    get_star_ts: u64,
-    star_index: u64,
+impl PartialOrd for Member {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Member {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
 }

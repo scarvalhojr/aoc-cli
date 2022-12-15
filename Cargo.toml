@@ -1,7 +1,7 @@
 [package]
 name = "aoc-cli"
 description = "Advent of Code command-line tool"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Sergio de Carvalho <scarvalhojr@gmail.com>"]
 categories = ["command-line-utilities"]
 edition = "2021"

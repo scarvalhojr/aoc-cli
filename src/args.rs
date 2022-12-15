@@ -96,9 +96,12 @@ pub enum Command {
         answer: String,
     },
 
-    /// Get private leaderboard results
-    #[command(visible_alias = "pr")]
-    PrivateLeaderboard { leaderboard: String },
+    /// Show the state of a private leaderboard
+    #[command(visible_alias = "p")]
+    PrivateLeaderboard {
+        /// Private leaderboard ID
+        leaderboard_id: String,
+    },
 }
 
 fn convert_number<T: FromStr>(s: &str) -> Result<T, String>

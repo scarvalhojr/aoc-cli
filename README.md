@@ -20,6 +20,7 @@ comfort of your terminal.
   Code event.
 - Load Advent of Code session cookie from a file.
 - Save puzzle description to a file in Markdown format.
+- Show the state of private leaderboards.
 
 ## Installation options 🎅
 
@@ -112,10 +113,11 @@ Advent of Code command-line tool
 Usage: aoc [OPTIONS] [COMMAND]
 
 Commands:
-  read      Read puzzle statement (the default command) [aliases: r]
-  download  Save puzzle description and input to files [aliases: d]
-  submit    Submit puzzle answer [aliases: s]
-  help      Print this message or the help of the given subcommand(s)
+  read                 Read puzzle statement (the default command) [aliases: r]
+  download             Save puzzle description and input to files [aliases: d]
+  submit               Submit puzzle answer [aliases: s]
+  private-leaderboard  Show the state of a private leaderboard [aliases: p]
+  help                 Print this message or the help of the given subcommand(s)
 
 Options:
   -d, --day <DAY>            Puzzle day [default: last unlocked day (during Advent of Code month)]
@@ -206,12 +208,37 @@ That's the right answer! You are one gold star closer to saving your vacation. [
 [1] /2022/day/2#part2
 ```
 
+### Show private leaderboard
+
+If you are a member of a [private leaderboard](https://adventofcode.com/leaderboard/private),
+you can see how you are faring against your friends by passing the leaderboad
+number:
+
+```
+# aoc private-leaderboard 1234
+
+[INFO  aoc] 🎄 aoc-cli - Advent of Code command-line tool
+Private leaderboard of me & my friends for Advent of Code 2022.
+
+                 1111111111222222
+        1234567890123456789012345
+ 1) 254 ★★★★★★★★★★★★...            Whitney Effertz
+ 2) 252 ★★★★★★★★★★.★★★.            Emery Zboncak
+ 3) 134 ★★★★★★★........            Ezra Parisian
+ 4)  72 ★★★★...........            Asha Gerlach
+ 5)  54 ★★★★...........            Frederik Robel
+ 6)  20 ★..............            Graciela Herzog
+ 7)   0 ...............            Thad Prohaska
+```
+
 ### Command abbreviations
 
-Any prefix of a command can be used instead of the full command name. For instance:
+Any non-ambiguous prefix of a command can be used instead of the full command
+name. For instance:
 - Instead of `aoc read`, type `aoc r`, `aoc re` or `aoc rea`.
 - Instead of `aoc download`, type `aoc d`, `aoc do`, `aoc dow`, `aoc down`, etc.
 - Instead of `aoc submit`, type `aoc s`, `aoc su`, `aoc sub`, etc.
+- Instead of `aoc private-leaderboard`, type `aoc p`, `aoc pr`, `aoc pri` etc.
 
 ### More examples
 

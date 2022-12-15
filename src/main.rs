@@ -6,8 +6,7 @@ use args::*;
 use clap::{crate_description, crate_name, Parser};
 use env_logger::{Builder, Env};
 use exit_code::*;
-use http::StatusCode;
-use log::{error, info, LevelFilter};
+use log::{error, info, warn, LevelFilter};
 use std::process::exit;
 
 const DEFAULT_COL_WIDTH: usize = 80;
@@ -25,27 +24,27 @@ fn main() {
             error!("🔔 {err}");
             let exit_code = match err {
                 AocError::InvalidPuzzleDate(..) => USAGE_ERROR,
+                AocError::InvalidEventYear(..) => USAGE_ERROR,
                 AocError::NonInferablePuzzleDate(..) => USAGE_ERROR,
                 AocError::LockedPuzzle(..) => USAGE_ERROR,
                 AocError::MissingConfigDir => NO_INPUT,
                 AocError::SessionFileReadError { .. } => IO_ERROR,
                 AocError::InvalidSessionCookie { .. } => DATA_ERROR,
-                AocError::HttpRequestError { source } => {
-                    if let Some(StatusCode::INTERNAL_SERVER_ERROR) =
-                        source.status()
-                    {
-                        // adventofcode.com returns HTTP 500 when session cookie
-                        // is no longer valid
-                        error!(
-                            "🔔 Your session cookie may have expired, try \
-                            logging in again"
-                        );
-                    }
-                    FAILURE
-                }
+                AocError::HttpRequestError { .. } => FAILURE,
                 AocError::AocResponseError => FAILURE,
+                AocError::PrivateLeaderboardNotAvailable => FAILURE,
                 AocError::FileWriteError { .. } => CANNOT_CREATE,
             };
+
+            if exit_code == FAILURE {
+                // Unexpected responses from adventofcode.com including
+                // HTTP 302/400/500 may be due to invalid or expired cookies
+                warn!(
+                    "🍪 Your session cookie may be invalid or expired, try \
+                    logging in again"
+                );
+            }
+
             exit(exit_code);
         }
     };
@@ -77,8 +76,8 @@ fn run(args: &Args) -> AocResult<()> {
         Some(Command::Submit { part, answer }) => {
             submit(args, &session, width, part, answer)
         }
-        Some(Command::PrivateLeaderboard { leaderboard }) => {
-            show_private_leaderboard_results(args, &session, leaderboard)
+        Some(Command::PrivateLeaderboard { leaderboard_id }) => {
+            private_leaderboard(args, &session, leaderboard_id)
         }
         _ => read(args, &session, width),
     }
