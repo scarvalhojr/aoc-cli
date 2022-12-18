@@ -16,6 +16,7 @@ path = "src/main.rs"
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "wasmbind"] }
+colored = "2.0.0"
 clap = { version = "4", features = ["cargo", "color", "derive"]}
 dirs = "4.0"
 exit-code = "1.0"

@@ -220,15 +220,18 @@ number:
 [INFO  aoc] 🎄 aoc-cli - Advent of Code command-line tool
 Private leaderboard of me & my friends for Advent of Code 2022.
 
+Gold * indicates the user got both stars for that day,
+silver * means just the first star, and a gray dot (.) means none.
+
                  1111111111222222
         1234567890123456789012345
- 1) 254 ★★★★★★★★★★★★...            Whitney Effertz
- 2) 252 ★★★★★★★★★★.★★★.            Emery Zboncak
- 3) 134 ★★★★★★★........            Ezra Parisian
- 4)  72 ★★★★...........            Asha Gerlach
- 5)  54 ★★★★...........            Frederik Robel
- 6)  20 ★..............            Graciela Herzog
- 7)   0 ...............            Thad Prohaska
+ 1) 274 **********.****....        Emery Zboncak
+ 2) 254 ************.......        Whitney Effertz
+ 3) 134 *******............        Ezra Parisian
+ 4)  72 ****...............        Asha Gerlach
+ 5)  54 ****...............        Frederik Robel
+ 6)  20 *..................        Graciela Herzog
+ 7)   0 ...................        Thad Prohaska
 ```
 
 ### Command abbreviations

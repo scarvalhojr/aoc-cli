@@ -1,5 +1,6 @@
 use crate::args::Args;
 use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
+use colored::{Color, Colorize};
 use dirs::{config_dir, home_dir};
 use html2md::parse_html;
 use html2text::from_read;
@@ -38,6 +39,18 @@ const SESSION_COOKIE_ENV_VAR: &str = "ADVENT_OF_CODE_SESSION";
 
 const PKG_REPO: &str = env!("CARGO_PKG_REPOSITORY");
 const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const GOLD: Color = Color::Yellow;
+const SILVER: Color = Color::TrueColor {
+    r: 160,
+    g: 160,
+    b: 160,
+};
+const DARK_GRAY: Color = Color::TrueColor {
+    r: 96,
+    g: 96,
+    b: 96,
+};
 
 pub type AocResult<T> = Result<T, AocError>;
 
@@ -389,7 +402,14 @@ pub fn private_leaderboard(
         .ok_or(AocError::AocResponseError)?;
 
     println!(
-        "Private leaderboard of {owner_name} for Advent of Code {year}.\n"
+        "Private leaderboard of {} for Advent of Code {}.\n\n\
+        {} indicates the user got both stars for that day,\n\
+        {} means just the first star, and a {} means none.\n",
+        owner_name.bold(),
+        year.to_string().bold(),
+        "Gold *".color(GOLD),
+        "silver *".color(SILVER),
+        "gray dot (.)".color(DARK_GRAY),
     );
 
     let mut members: Vec<_> = leaderboard.members.values().collect();
@@ -401,21 +421,25 @@ pub fn private_leaderboard(
     let rank_width = highest_rank.to_string().len();
     let header_pad: String =
         vec![' '; rank_width + score_width].into_iter().collect();
-    println!("{header_pad}            1111111111222222");
-    println!("{header_pad}   1234567890123456789012345");
+
+    for header in ["         1111111111222222", "1234567890123456789012345"] {
+        let (on, off) = header.split_at(last_unlocked_day as usize);
+        println!("{header_pad}   {}{}", on, off.color(DARK_GRAY));
+    }
 
     for (member, rank) in members.iter().zip(1..) {
         let stars: String = (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY)
             .map(|day| {
                 if day > last_unlocked_day {
-                    ' '
+                    " ".normal()
                 } else {
                     match member.count_stars(day) {
-                        2 => '★',
-                        1 => '☆',
-                        _ => '.',
+                        2 => "*".color(GOLD),
+                        1 => "*".color(SILVER),
+                        _ => ".".color(DARK_GRAY),
                     }
                 }
+                .to_string()
             })
             .collect();
 
