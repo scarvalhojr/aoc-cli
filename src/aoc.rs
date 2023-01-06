@@ -1,4 +1,3 @@
-use crate::args::Args;
 use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
 use colored::{Color, Colorize};
 use dirs::{config_dir, home_dir};
@@ -7,7 +6,7 @@ use html2text::from_read;
 use http::StatusCode;
 use log::{debug, info, warn};
 use regex::Regex;
-use reqwest::blocking::Client;
+use reqwest::blocking::Client as HttpClient;
 use reqwest::header::{
     HeaderMap, HeaderValue, InvalidHeaderValue, CONTENT_TYPE, COOKIE,
     USER_AGENT,
@@ -19,7 +18,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fs::{read_to_string, OpenOptions};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::Path;
 use thiserror::Error;
 
 pub type PuzzleYear = i32;
@@ -36,6 +35,8 @@ const RELEASE_TIMEZONE_OFFSET: i32 = -5 * 3600;
 const SESSION_COOKIE_FILE: &str = "adventofcode.session";
 const HIDDEN_SESSION_COOKIE_FILE: &str = ".adventofcode.session";
 const SESSION_COOKIE_ENV_VAR: &str = "ADVENT_OF_CODE_SESSION";
+
+const DEFAULT_COL_WIDTH: usize = 80;
 
 const PKG_REPO: &str = env!("CARGO_PKG_REPOSITORY");
 const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -62,14 +63,17 @@ pub enum AocError {
     #[error("{0} is not a valid Advent of Code year")]
     InvalidEventYear(PuzzleYear),
 
+    #[error("{0} is not a valid Advent of Code day")]
+    InvalidEventDay(PuzzleDay),
+
     #[error("Could not infer puzzle day for year {0}")]
     NonInferablePuzzleDate(PuzzleYear),
 
     #[error("Puzzle {0} of {1} is still locked")]
     LockedPuzzle(PuzzleDay, PuzzleYear),
 
-    #[error("Failed to find user config directory")]
-    MissingConfigDir,
+    #[error("Session cookie file not found in home or config directory")]
+    SessionFileNotFound,
 
     #[error("Failed to read session cookie from '{filename}': {source}")]
     SessionFileReadError {
@@ -102,6 +106,9 @@ pub enum AocError {
         #[source]
         source: std::io::Error,
     },
+
+    #[error("Failed to create client due to missing field: {0}")]
+    ClientFieldMissing(String),
 }
 
 pub fn is_valid_year(year: PuzzleYear) -> bool {
@@ -112,119 +119,538 @@ pub fn is_valid_day(day: PuzzleDay) -> bool {
     (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY).contains(&day)
 }
 
-fn latest_event_year() -> PuzzleYear {
-    let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)
-        .unwrap()
-        .from_utc_datetime(&Utc::now().naive_utc());
-
-    if now.month() < DECEMBER {
-        now.year() - 1
-    } else {
-        now.year()
-    }
+pub struct AocClient {
+    session_cookie: String,
+    year: PuzzleYear,
+    day: PuzzleDay,
+    output_width: usize,
+    overwrite_file: bool,
+    input_file: String,
+    puzzle_file: String,
 }
 
-fn current_event_day(year: PuzzleYear) -> Option<PuzzleDay> {
-    let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)?
-        .from_utc_datetime(&Utc::now().naive_utc());
+#[must_use]
+pub struct AocClientBuilder {
+    session_cookie: Option<String>,
+    year: Option<PuzzleYear>,
+    day: Option<PuzzleDay>,
+    output_width: usize,
+    overwrite_file: bool,
+    input_file: String,
+    puzzle_file: String,
+}
 
-    if now.month() == DECEMBER && now.year() == year {
-        if now.day() > LAST_PUZZLE_DAY {
-            Some(LAST_PUZZLE_DAY)
+impl AocClient {
+    pub fn builder() -> AocClientBuilder {
+        AocClientBuilder::default()
+    }
+
+    pub fn day_unlocked(&self) -> AocResult<bool> {
+        let timezone = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET).unwrap();
+        let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
+        let puzzle_date =
+            NaiveDate::from_ymd_opt(self.year, DECEMBER, self.day)
+                .ok_or(AocError::InvalidPuzzleDate(self.day, self.year))?
+                .and_hms_opt(0, 0, 0)
+                .unwrap();
+        let unlock_time = timezone.from_local_datetime(&puzzle_date).single();
+
+        if let Some(time) = unlock_time {
+            Ok(now.signed_duration_since(time).num_milliseconds() >= 0)
         } else {
-            Some(now.day())
+            Ok(false)
         }
-    } else {
-        None
-    }
-}
-
-fn puzzle_unlocked(year: PuzzleYear, day: PuzzleDay) -> AocResult<bool> {
-    let timezone = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET).unwrap();
-    let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
-    let puzzle_date = NaiveDate::from_ymd_opt(year, DECEMBER, day)
-        .ok_or(AocError::InvalidPuzzleDate(day, year))?
-        .and_hms_opt(0, 0, 0)
-        .unwrap();
-    let unlock_time = timezone.from_local_datetime(&puzzle_date).single();
-
-    if let Some(time) = unlock_time {
-        Ok(now.signed_duration_since(time).num_milliseconds() >= 0)
-    } else {
-        Ok(false)
-    }
-}
-
-fn last_unlocked_day(year: PuzzleYear) -> AocResult<PuzzleDay> {
-    if let Some(day) = current_event_day(year) {
-        return Ok(day);
     }
 
-    let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)
+    fn ensure_day_unlocked(&self) -> AocResult<()> {
+        if self.day_unlocked()? {
+            Ok(())
+        } else {
+            Err(AocError::LockedPuzzle(self.day, self.year))
+        }
+    }
+
+    pub fn get_puzzle_html(&self) -> AocResult<String> {
+        self.ensure_day_unlocked()?;
+
+        debug!("🦌 Fetching puzzle for day {}, {}", self.day, self.year);
+
+        let url =
+            format!("https://adventofcode.com/{}/day/{}", self.year, self.day);
+        let response = http_client(&self.session_cookie, "text/html")?
+            .get(url)
+            .send()
+            .and_then(|response| response.error_for_status())
+            .and_then(|response| response.text())?;
+        let puzzle_html = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+            .unwrap()
+            .captures(&response)
+            .ok_or(AocError::AocResponseError)?
+            .name("main")
+            .unwrap()
+            .as_str()
+            .to_string();
+
+        Ok(puzzle_html)
+    }
+
+    pub fn get_input(&self) -> AocResult<String> {
+        self.ensure_day_unlocked()?;
+
+        debug!("🦌 Fetching input for day {}, {}", self.day, self.year);
+
+        let url = format!(
+            "https://adventofcode.com/{}/day/{}/input",
+            self.year, self.day
+        );
+        http_client(&self.session_cookie, "text/plain")?
+            .get(url)
+            .send()
+            .and_then(|response| response.error_for_status())
+            .and_then(|response| response.text())
+            .map_err(AocError::from)
+    }
+
+    pub fn submit_answer(&self, part: &str, answer: &str) -> AocResult<()> {
+        self.ensure_day_unlocked()?;
+
+        debug!(
+            "🦌 Submitting answer for part {part}, day {}, {}",
+            self.day, self.year
+        );
+
+        let url = format!(
+            "https://adventofcode.com/{}/day/{}/answer",
+            self.year, self.day
+        );
+        let content_type = "application/x-www-form-urlencoded";
+        let response = http_client(&self.session_cookie, content_type)?
+            .post(url)
+            .body(format!("level={}&answer={}", part, answer))
+            .send()
+            .and_then(|response| response.error_for_status())
+            .and_then(|response| response.text())?;
+        let result = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+            .unwrap()
+            .captures(&response)
+            .ok_or(AocError::AocResponseError)?
+            .name("main")
+            .unwrap()
+            .as_str();
+
+        println!("\n{}", from_read(result.as_bytes(), self.output_width));
+        Ok(())
+    }
+
+    pub fn show_puzzle_text(&self) -> AocResult<()> {
+        let puzzle_html = self.get_puzzle_html()?;
+        let puzzle_text = from_read(puzzle_html.as_bytes(), self.output_width);
+        println!("\n{puzzle_text}");
+        Ok(())
+    }
+
+    pub fn save_puzzle_markdown(&self) -> AocResult<()> {
+        let puzzle_html = self.get_puzzle_html()?;
+        let puzzle_markdow = parse_html(&puzzle_html);
+        save_file(&self.puzzle_file, self.overwrite_file, &puzzle_markdow)?;
+        info!("🎅 Saved puzzle to '{}'", &self.puzzle_file);
+        Ok(())
+    }
+
+    pub fn save_input(&self) -> AocResult<()> {
+        let input = self.get_input()?;
+        save_file(&self.input_file, self.overwrite_file, &input)?;
+        info!("🎅 Saved input to '{}'", &self.input_file);
+        Ok(())
+    }
+
+    pub fn get_calendar_html(&self) -> AocResult<String> {
+        debug!("🦌 Fetching {} calendar", self.year);
+
+        let url = format!("https://adventofcode.com/{}", self.year);
+        let response = http_client(&self.session_cookie, "text/html")?
+            .get(url)
+            .send()?;
+
+        if response.status() == StatusCode::NOT_FOUND {
+            // A 402 reponse means the calendar for
+            // the requested year is not yet available
+            return Err(AocError::InvalidEventYear(self.year));
+        }
+
+        let contents = response.error_for_status()?.text()?;
+
+        if Regex::new(r#"href="/[0-9]{4}/auth/login""#)
+            .unwrap()
+            .is_match(&contents)
+        {
+            warn!(
+                "🍪 It looks like you are not logged in, try logging in again"
+            );
+        }
+
+        let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+            .unwrap()
+            .captures(&contents)
+            .ok_or(AocError::AocResponseError)?
+            .name("main")
+            .unwrap()
+            .as_str()
+            .to_string();
+
+        // Remove elements that won't render well in the terminal
+        let cleaned_up = Regex::new(concat!(
+            // Remove all hyperlinks
+            r#"(href="[^"]*")"#,
+            // Remove 2015 "calendar-bkg"
+            r#"|(<div class="calendar-bkg">[[:space:]]*"#,
+            r#"(<div>[^<]*</div>[[:space:]]*)*</div>)"#,
+            // Remove 2017 "naughty/nice" animation
+            r#"|(<div class="calendar-printer">(?s:.)*"#,
+            r#"\|O\|</span></div>[[:space:]]*)"#,
+            // Remove 2018 "space mug"
+            r#"|(<pre id="spacemug"[^>]*>[^<]*</pre>)"#,
+            // Remove 2019 shadows
+            r#"|(<span style="color[^>]*position:absolute"#,
+            r#"[^>]*>\.</span>)"#,
+            // Remove 2019 "sunbeam"
+            r#"|(<span class="sunbeam"[^>]*>"#,
+            r#"<span style="animation-delay[^>]*>\*</span></span>)"#,
+        ))
         .unwrap()
-        .from_utc_datetime(&Utc::now().naive_utc());
+        .replace_all(&main, "")
+        .to_string();
 
-    if year >= FIRST_EVENT_YEAR && year < now.year() {
-        Ok(LAST_PUZZLE_DAY)
-    } else {
-        Err(AocError::InvalidEventYear(year))
+        let class_regex =
+            Regex::new(r#"<a [^>]*class="(?P<class>[^"]*)""#).unwrap();
+        let star_regex = Regex::new(concat!(
+            r#"(?P<stars><span class="calendar-mark-complete">\*</span>"#,
+            r#"<span class="calendar-mark-verycomplete">\*</span>)"#,
+        ))
+        .unwrap();
+
+        // Remove stars that have not been collected
+        let calendar = cleaned_up
+            .lines()
+            .map(|line| {
+                let class = class_regex
+                    .captures(line)
+                    .and_then(|c| c.name("class"))
+                    .map(|c| c.as_str())
+                    .unwrap_or("");
+
+                let stars = if class.contains("calendar-verycomplete") {
+                    "**"
+                } else if class.contains("calendar-complete") {
+                    "*"
+                } else {
+                    ""
+                };
+
+                star_regex.replace(line, stars)
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        Ok(calendar)
+    }
+
+    pub fn show_calendar(&self) -> AocResult<()> {
+        let calendar = self.get_calendar_html()?;
+        println!("\n{}", from_read(calendar.as_bytes(), self.output_width));
+        Ok(())
+    }
+
+    fn get_private_leaderboard(
+        &self,
+        leaderboard_id: &str,
+    ) -> AocResult<PrivateLeaderboard> {
+        debug!("🦌 Fetching private leaderboard {leaderboard_id}");
+
+        let url = format!(
+            "https://adventofcode.com/{}/leaderboard/private/view\
+            /{leaderboard_id}.json",
+            self.year
+        );
+        let response = http_client(&self.session_cookie, "application/json")?
+            .get(url)
+            .send()
+            .and_then(|response| response.error_for_status())?;
+
+        if response.status() == StatusCode::FOUND {
+            // A 302 reponse is a redirect and it means
+            // the leaderboard doesn't exist or we can't access it
+            return Err(AocError::PrivateLeaderboardNotAvailable);
+        }
+
+        response.json().map_err(AocError::from)
+    }
+
+    pub fn current_event_day(&self) -> Option<PuzzleDay> {
+        let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)?
+            .from_utc_datetime(&Utc::now().naive_utc());
+
+        if now.year() == self.year && now.month() == DECEMBER {
+            if now.day() > LAST_PUZZLE_DAY {
+                Some(LAST_PUZZLE_DAY)
+            } else {
+                Some(now.day())
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn last_unlocked_day(&self) -> AocResult<PuzzleDay> {
+        if let Some(day) = self.current_event_day() {
+            return Ok(day);
+        }
+
+        let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)
+            .unwrap()
+            .from_utc_datetime(&Utc::now().naive_utc());
+
+        if self.year >= FIRST_EVENT_YEAR && self.year < now.year() {
+            Ok(LAST_PUZZLE_DAY)
+        } else {
+            Err(AocError::InvalidEventYear(self.year))
+        }
+    }
+
+    pub fn show_private_leaderboard(
+        &self,
+        leaderboard_id: &str,
+    ) -> AocResult<()> {
+        let last_unlocked_day = self.last_unlocked_day()?;
+        let leaderboard = self.get_private_leaderboard(leaderboard_id)?;
+        let owner_name = leaderboard
+            .get_owner_name()
+            .ok_or(AocError::AocResponseError)?;
+
+        println!(
+            "Private leaderboard of {} for Advent of Code {}.\n\n\
+            {} indicates the user got both stars for that day,\n\
+            {} means just the first star, and a {} means none.\n",
+            owner_name.bold(),
+            self.year.to_string().bold(),
+            "Gold *".color(GOLD),
+            "silver *".color(SILVER),
+            "gray dot (.)".color(DARK_GRAY),
+        );
+
+        let mut members: Vec<_> = leaderboard.members.values().collect();
+        members.sort_by_key(|member| Reverse(*member));
+
+        let highest_score = members.first().map(|m| m.local_score).unwrap_or(0);
+        let score_width = highest_score.to_string().len();
+        let highest_rank = 1 + leaderboard.members.len();
+        let rank_width = highest_rank.to_string().len();
+        let header_pad: String =
+            vec![' '; rank_width + score_width].into_iter().collect();
+
+        for header in ["         1111111111222222", "1234567890123456789012345"]
+        {
+            let (on, off) = header.split_at(last_unlocked_day as usize);
+            println!("{header_pad}   {}{}", on, off.color(DARK_GRAY));
+        }
+
+        for (member, rank) in members.iter().zip(1..) {
+            let stars: String = (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY)
+                .map(|day| {
+                    if day > last_unlocked_day {
+                        " ".normal()
+                    } else {
+                        match member.count_stars(day) {
+                            2 => "*".color(GOLD),
+                            1 => "*".color(SILVER),
+                            _ => ".".color(DARK_GRAY),
+                        }
+                    }
+                    .to_string()
+                })
+                .collect();
+
+            println!(
+                "{rank:rank_width$}) {:score_width$} {stars}  {}",
+                member.local_score,
+                member.get_name(),
+            );
+        }
+
+        Ok(())
     }
 }
 
-fn puzzle_year_day(
-    opt_year: Option<PuzzleYear>,
-    opt_day: Option<PuzzleDay>,
-) -> AocResult<(PuzzleYear, PuzzleDay)> {
-    let year = opt_year.unwrap_or_else(latest_event_year);
-    let day = opt_day
-        .or_else(|| current_event_day(year))
-        .ok_or(AocError::NonInferablePuzzleDate(year))?;
+impl Default for AocClientBuilder {
+    fn default() -> Self {
+        let session_cookie = None;
+        let year = None;
+        let day = None;
+        let output_width = term_size::dimensions()
+            .map(|(w, _)| w)
+            .unwrap_or(DEFAULT_COL_WIDTH);
+        let overwrite_file = false;
+        let input_file = "input".to_string();
+        let puzzle_file = "puzzle.md".to_string();
 
-    if !puzzle_unlocked(year, day)? {
-        return Err(AocError::LockedPuzzle(day, year));
+        Self {
+            session_cookie,
+            year,
+            day,
+            output_width,
+            overwrite_file,
+            input_file,
+            puzzle_file,
+        }
     }
-
-    Ok((year, day))
 }
 
-pub fn load_session_cookie(session_file: &Option<String>) -> AocResult<String> {
-    if session_file.is_none() {
+impl AocClientBuilder {
+    pub fn build(&self) -> AocResult<AocClient> {
+        for (missing, field) in [
+            (self.session_cookie.is_none(), "session cookie"),
+            (self.year.is_none(), "year"),
+            (self.day.is_none(), "day"),
+        ] {
+            if missing {
+                return Err(AocError::ClientFieldMissing(field.to_string()));
+            }
+        }
+
+        Ok(AocClient {
+            session_cookie: self.session_cookie.clone().unwrap(),
+            year: self.year.unwrap(),
+            day: self.day.unwrap(),
+            output_width: self.output_width,
+            overwrite_file: self.overwrite_file,
+            input_file: self.input_file.clone(),
+            puzzle_file: self.puzzle_file.clone(),
+        })
+    }
+
+    pub fn session_cookie<'a>(
+        &'a mut self,
+        session: &str,
+    ) -> AocResult<&'a mut Self> {
+        self.session_cookie = Some(session.trim().to_string());
+        Ok(self)
+    }
+
+    pub fn session_cookie_from_default_locations(
+        &mut self,
+    ) -> AocResult<&mut Self> {
         if let Ok(cookie) = env::var(SESSION_COOKIE_ENV_VAR) {
             debug!(
                 "🍪 Loaded session cookie from '{SESSION_COOKIE_ENV_VAR}' \
-                 environment variable"
+                environment variable"
             );
-            return Ok(cookie);
+
+            self.session_cookie(&cookie)
+        } else {
+            let path = if let Some(home_path) = home_dir()
+                .map(|dir| dir.join(HIDDEN_SESSION_COOKIE_FILE))
+                .filter(|file| file.exists())
+            {
+                home_path
+            } else if let Some(config_path) = config_dir()
+                .map(|dir| dir.join(SESSION_COOKIE_FILE))
+                .filter(|file| file.exists())
+            {
+                config_path
+            } else {
+                return Err(AocError::SessionFileNotFound);
+            };
+
+            self.session_cookie_from_file(path)
         }
     }
 
-    let path = if let Some(file) = session_file {
-        PathBuf::from(file)
-    } else if let Some(file) = home_dir()
-        .map(|dir| dir.join(HIDDEN_SESSION_COOKIE_FILE))
-        .filter(|file| file.exists())
-    {
-        file
-    } else if let Some(dir) = config_dir() {
-        dir.join(SESSION_COOKIE_FILE)
-    } else {
-        return Err(AocError::MissingConfigDir);
-    };
+    pub fn session_cookie_from_file<P: AsRef<Path>>(
+        &mut self,
+        file: P,
+    ) -> AocResult<&mut Self> {
+        let cookie = read_to_string(&file).map_err(|err| {
+            AocError::SessionFileReadError {
+                filename: file.as_ref().display().to_string(),
+                source: err,
+            }
+        })?;
 
-    let cookie =
-        read_to_string(&path).map_err(|err| AocError::SessionFileReadError {
-            filename: path.display().to_string(),
-            source: err,
-        });
-
-    if cookie.is_ok() {
-        debug!("🍪 Loaded session cookie from '{}'", path.display());
+        debug!(
+            "🍪 Loaded session cookie from '{}'",
+            file.as_ref().display()
+        );
+        self.session_cookie(&cookie)
     }
 
-    cookie
+    pub fn year(&mut self, year: PuzzleYear) -> AocResult<&mut Self> {
+        if is_valid_year(year) {
+            self.year = Some(year);
+            Ok(self)
+        } else {
+            Err(AocError::InvalidEventYear(year))
+        }
+    }
+
+    pub fn latest_event_year(&mut self) -> AocResult<&mut Self> {
+        let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)
+            .unwrap()
+            .from_utc_datetime(&Utc::now().naive_utc());
+
+        let year = if now.month() < DECEMBER {
+            now.year() - 1
+        } else {
+            now.year()
+        };
+
+        self.year(year)
+    }
+
+    pub fn day(&mut self, day: PuzzleDay) -> AocResult<&mut Self> {
+        if is_valid_day(day) {
+            self.day = Some(day);
+            Ok(self)
+        } else {
+            Err(AocError::InvalidEventDay(day))
+        }
+    }
+
+    pub fn latest_puzzle_day(&mut self) -> AocResult<&mut Self> {
+        if self.year.is_none() {
+            self.latest_event_year()?;
+        }
+
+        let event_year = self.year.unwrap();
+        if let Some(offset) = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET) {
+            let now = offset.from_utc_datetime(&Utc::now().naive_utc());
+            if now.year() == event_year
+                && now.month() == DECEMBER
+                && now.day() <= LAST_PUZZLE_DAY
+            {
+                return self.day(now.day());
+            }
+
+            return self.day(LAST_PUZZLE_DAY);
+        }
+
+        Err(AocError::NonInferablePuzzleDate(event_year))
+    }
+
+    pub fn output_width(&mut self, width: usize) -> &mut Self {
+        self.output_width = width;
+        self
+    }
+
+    pub fn overwrite_file(&mut self, overwrite: bool) -> &mut Self {
+        self.overwrite_file = overwrite;
+        self
+    }
 }
 
-fn build_client(session_cookie: &str, content_type: &str) -> AocResult<Client> {
+fn http_client(
+    session_cookie: &str,
+    content_type: &str,
+) -> AocResult<HttpClient> {
     let cookie_header =
         HeaderValue::from_str(&format!("session={}", session_cookie.trim()))?;
     let content_type_header = HeaderValue::from_str(content_type).unwrap();
@@ -236,52 +662,10 @@ fn build_client(session_cookie: &str, content_type: &str) -> AocResult<Client> {
     headers.insert(CONTENT_TYPE, content_type_header);
     headers.insert(USER_AGENT, user_agent_header);
 
-    Client::builder()
+    HttpClient::builder()
         .default_headers(headers)
         .redirect(Policy::none())
         .build()
-        .map_err(AocError::from)
-}
-
-fn get_description(
-    session_cookie: &str,
-    year: PuzzleYear,
-    day: PuzzleDay,
-) -> AocResult<String> {
-    debug!("🦌 Fetching puzzle for day {}, {}", day, year);
-
-    let url = format!("https://adventofcode.com/{}/day/{}", year, day);
-    let response = build_client(session_cookie, "text/html")?
-        .get(&url)
-        .send()
-        .and_then(|response| response.error_for_status())
-        .and_then(|response| response.text())?;
-
-    let desc = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
-        .unwrap()
-        .captures(&response)
-        .ok_or(AocError::AocResponseError)?
-        .name("main")
-        .unwrap()
-        .as_str()
-        .to_string();
-
-    Ok(desc)
-}
-
-fn get_input(
-    session_cookie: &str,
-    year: PuzzleYear,
-    day: PuzzleDay,
-) -> AocResult<String> {
-    debug!("🦌 Downloading input for day {}, {}", day, year);
-
-    let url = format!("https://adventofcode.com/{}/day/{}/input", year, day);
-    build_client(session_cookie, "text/plain")?
-        .get(&url)
-        .send()
-        .and_then(|response| response.error_for_status())
-        .and_then(|response| response.text())
         .map_err(AocError::from)
 }
 
@@ -301,156 +685,6 @@ fn save_file(filename: &str, overwrite: bool, contents: &str) -> AocResult<()> {
             filename: filename.to_string(),
             source: err,
         })
-}
-
-pub fn download(args: &Args, session_cookie: &str) -> AocResult<()> {
-    let (year, day) = puzzle_year_day(args.year, args.day)?;
-
-    if !args.input_only {
-        let desc = get_description(session_cookie, year, day)?;
-        save_file(&args.puzzle_file, args.overwrite, &parse_html(&desc))?;
-        info!("🎅 Saved puzzle description to '{}'", args.puzzle_file);
-    }
-
-    if !args.puzzle_only {
-        let input = get_input(session_cookie, year, day)?;
-        save_file(&args.input_file, args.overwrite, &input)?;
-        info!("🎅 Saved puzzle input to '{}'", args.input_file);
-    }
-
-    Ok(())
-}
-
-pub fn submit(
-    args: &Args,
-    session_cookie: &str,
-    col_width: usize,
-    part: &str,
-    answer: &str,
-) -> AocResult<()> {
-    let (year, day) = puzzle_year_day(args.year, args.day)?;
-
-    debug!("🦌 Submitting answer for part {part}, day {day}, {year}");
-    let url = format!("https://adventofcode.com/{}/day/{}/answer", year, day);
-    let content_type = "application/x-www-form-urlencoded";
-    let response = build_client(session_cookie, content_type)?
-        .post(&url)
-        .body(format!("level={}&answer={}", part, answer))
-        .send()
-        .and_then(|response| response.error_for_status())
-        .and_then(|response| response.text())?;
-
-    let result = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
-        .unwrap()
-        .captures(&response)
-        .ok_or(AocError::AocResponseError)?
-        .name("main")
-        .unwrap()
-        .as_str();
-
-    println!("\n{}", from_read(result.as_bytes(), col_width));
-    Ok(())
-}
-
-pub fn read(
-    args: &Args,
-    session_cookie: &str,
-    col_width: usize,
-) -> AocResult<()> {
-    let (year, day) = puzzle_year_day(args.year, args.day)?;
-    let desc = get_description(session_cookie, year, day)?;
-    println!("\n{}", from_read(desc.as_bytes(), col_width));
-    Ok(())
-}
-
-fn get_private_leaderboard(
-    session: &str,
-    leaderboard_id: &str,
-    year: PuzzleYear,
-) -> AocResult<PrivateLeaderboard> {
-    debug!("🦌 Fetching private leaderboard {leaderboard_id}");
-
-    let url = format!(
-        "https://adventofcode.com/{year}/leaderboard/private/view\
-        /{leaderboard_id}.json",
-    );
-
-    let response = build_client(session, "application/json")?
-        .get(&url)
-        .send()
-        .and_then(|response| response.error_for_status())?;
-
-    if response.status() == StatusCode::FOUND {
-        // A 302 reponse is a redirect and it means
-        // the leaderboard doesn't exist or we can't access it
-        return Err(AocError::PrivateLeaderboardNotAvailable);
-    }
-
-    response.json().map_err(AocError::from)
-}
-
-pub fn private_leaderboard(
-    args: &Args,
-    session: &str,
-    leaderboard_id: &str,
-) -> AocResult<()> {
-    let year = args.year.unwrap_or_else(latest_event_year);
-    let last_unlocked_day = last_unlocked_day(year)?;
-    let leaderboard = get_private_leaderboard(session, leaderboard_id, year)?;
-    let owner_name = leaderboard
-        .get_owner_name()
-        .ok_or(AocError::AocResponseError)?;
-
-    println!(
-        "Private leaderboard of {} for Advent of Code {}.\n\n\
-        {} indicates the user got both stars for that day,\n\
-        {} means just the first star, and a {} means none.\n",
-        owner_name.bold(),
-        year.to_string().bold(),
-        "Gold *".color(GOLD),
-        "silver *".color(SILVER),
-        "gray dot (.)".color(DARK_GRAY),
-    );
-
-    let mut members: Vec<_> = leaderboard.members.values().collect();
-    members.sort_by_key(|member| Reverse(*member));
-
-    let highest_score = members.first().map(|m| m.local_score).unwrap_or(0);
-    let score_width = highest_score.to_string().len();
-    let highest_rank = 1 + leaderboard.members.len();
-    let rank_width = highest_rank.to_string().len();
-    let header_pad: String =
-        vec![' '; rank_width + score_width].into_iter().collect();
-
-    for header in ["         1111111111222222", "1234567890123456789012345"] {
-        let (on, off) = header.split_at(last_unlocked_day as usize);
-        println!("{header_pad}   {}{}", on, off.color(DARK_GRAY));
-    }
-
-    for (member, rank) in members.iter().zip(1..) {
-        let stars: String = (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY)
-            .map(|day| {
-                if day > last_unlocked_day {
-                    " ".normal()
-                } else {
-                    match member.count_stars(day) {
-                        2 => "*".color(GOLD),
-                        1 => "*".color(SILVER),
-                        _ => ".".color(DARK_GRAY),
-                    }
-                }
-                .to_string()
-            })
-            .collect();
-
-        println!(
-            "{rank:rank_width$}) {:score_width$} {stars}  {}",
-            member.local_score,
-            member.get_name(),
-        );
-    }
-
-    Ok(())
 }
 
 #[derive(Deserialize)]
@@ -513,104 +747,4 @@ impl PartialEq for Member {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }
-}
-
-fn get_calendar(session_cookie: &str, year: PuzzleYear) -> AocResult<String> {
-    debug!("🦌 Fetching {year} calendar");
-
-    let url = format!("https://adventofcode.com/{year}");
-    let response = build_client(session_cookie, "text/html")?
-        .get(&url)
-        .send()?;
-
-    if response.status() == StatusCode::NOT_FOUND {
-        // A 402 reponse means the calendar for
-        // the requested year is not yet available
-        return Err(AocError::InvalidEventYear(year));
-    }
-
-    let contents = response.error_for_status()?.text()?;
-
-    if Regex::new(r#"href="/[0-9]{4}/auth/login""#)
-        .unwrap()
-        .is_match(&contents)
-    {
-        warn!("🍪 It looks like you are not logged in, try logging in again");
-    }
-
-    let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
-        .unwrap()
-        .captures(&contents)
-        .ok_or(AocError::AocResponseError)?
-        .name("main")
-        .unwrap()
-        .as_str()
-        .to_string();
-
-    // Remove elements that won't render well in the terminal
-    let cleaned_up = Regex::new(concat!(
-        // Remove all hyperlinks
-        r#"(href="[^"]*")"#,
-        // Remove 2015 "calendar-bkg"
-        r#"|(<div class="calendar-bkg">[[:space:]]*"#,
-        r#"(<div>[^<]*</div>[[:space:]]*)*</div>)"#,
-        // Remove 2017 "naughty/nice" animation
-        r#"|(<div class="calendar-printer">(?s:.)*"#,
-        r#"\|O\|</span></div>[[:space:]]*)"#,
-        // Remove 2018 "space mug"
-        r#"|(<pre id="spacemug"[^>]*>[^<]*</pre>)"#,
-        // Remove 2019 shadows
-        r#"|(<span style="color[^>]*position:absolute"#,
-        r#"[^>]*>\.</span>)"#,
-        // Remove 2019 "sunbeam"
-        r#"|(<span class="sunbeam"[^>]*>"#,
-        r#"<span style="animation-delay[^>]*>\*</span></span>)"#,
-    ))
-    .unwrap()
-    .replace_all(&main, "")
-    .to_string();
-
-    let class_regex =
-        Regex::new(r#"<a [^>]*class="(?P<class>[^"]*)""#).unwrap();
-    let star_regex = Regex::new(concat!(
-        r#"(?P<stars><span class="calendar-mark-complete">\*</span>"#,
-        r#"<span class="calendar-mark-verycomplete">\*</span>)"#,
-    ))
-    .unwrap();
-
-    // Remove stars that have not been collected
-    let calendar = cleaned_up
-        .lines()
-        .map(|line| {
-            let class = class_regex
-                .captures(line)
-                .and_then(|c| c.name("class"))
-                .map(|c| c.as_str())
-                .unwrap_or("");
-
-            let stars = if class.contains("calendar-verycomplete") {
-                "**"
-            } else if class.contains("calendar-complete") {
-                "*"
-            } else {
-                ""
-            };
-
-            star_regex.replace(line, stars)
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
-
-    Ok(calendar)
-}
-
-pub fn calendar(
-    args: &Args,
-    session_cookie: &str,
-    col_width: usize,
-) -> AocResult<()> {
-    let year = args.year.unwrap_or_else(latest_event_year);
-    let desc = get_calendar(session_cookie, year)?;
-    println!("\n{}", from_read(desc.as_bytes(), col_width));
-    Ok(())
 }

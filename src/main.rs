@@ -9,8 +9,6 @@ use exit_code::*;
 use log::{error, info, warn, LevelFilter};
 use std::process::exit;
 
-const DEFAULT_COL_WIDTH: usize = 80;
-
 fn main() {
     let args = Args::parse();
 
@@ -18,22 +16,24 @@ fn main() {
 
     info!("🎄 {} - {}", crate_name!(), crate_description!());
 
-    match run(&args) {
+    match build_client(&args).and_then(|client| run(&args, client)) {
         Ok(_) => exit(SUCCESS),
         Err(err) => {
             error!("🔔 {err}");
             let exit_code = match err {
                 AocError::InvalidPuzzleDate(..) => USAGE_ERROR,
                 AocError::InvalidEventYear(..) => USAGE_ERROR,
+                AocError::InvalidEventDay(..) => USAGE_ERROR,
                 AocError::NonInferablePuzzleDate(..) => USAGE_ERROR,
                 AocError::LockedPuzzle(..) => USAGE_ERROR,
-                AocError::MissingConfigDir => NO_INPUT,
+                AocError::SessionFileNotFound => NO_INPUT,
                 AocError::SessionFileReadError { .. } => IO_ERROR,
                 AocError::InvalidSessionCookie { .. } => DATA_ERROR,
                 AocError::HttpRequestError { .. } => FAILURE,
                 AocError::AocResponseError => FAILURE,
                 AocError::PrivateLeaderboardNotAvailable => FAILURE,
                 AocError::FileWriteError { .. } => CANNOT_CREATE,
+                AocError::ClientFieldMissing(..) => USAGE_ERROR,
             };
 
             if exit_code == FAILURE {
@@ -63,23 +63,47 @@ fn setup_log(args: &Args) {
     log_builder.format_timestamp(None).init();
 }
 
-fn run(args: &Args) -> AocResult<()> {
-    let session = load_session_cookie(&args.session_file)?;
+fn build_client(args: &Args) -> AocResult<AocClient> {
+    let mut builder = AocClient::builder();
 
-    let width = args
-        .width
-        .or_else(|| term_size::dimensions().map(|(w, _)| w))
-        .unwrap_or(DEFAULT_COL_WIDTH);
+    if let Some(file) = &args.session_file {
+        builder.session_cookie_from_file(file)?;
+    } else {
+        builder.session_cookie_from_default_locations()?;
+    }
 
+    match (&args.year, &args.day) {
+        (Some(y), Some(d)) => builder.year(*y)?.day(*d)?,
+        (Some(y), None) => builder.year(*y)?.latest_puzzle_day()?,
+        (None, Some(d)) => builder.latest_event_year()?.day(*d)?,
+        (None, None) => builder.latest_puzzle_day()?,
+    };
+
+    if let Some(width) = &args.width {
+        builder.output_width(*width);
+    }
+
+    builder.overwrite_file(args.overwrite).build()
+}
+
+fn run(args: &Args, client: AocClient) -> AocResult<()> {
     match &args.command {
-        Some(Command::Calendar) => calendar(args, &session, width),
-        Some(Command::Download) => download(args, &session),
+        Some(Command::Calendar) => client.show_calendar(),
+        Some(Command::Download) => {
+            if !args.input_only {
+                client.save_puzzle_markdown()?;
+            }
+            if !args.puzzle_only {
+                client.save_input()?;
+            }
+            Ok(())
+        }
         Some(Command::Submit { part, answer }) => {
-            submit(args, &session, width, part, answer)
+            client.submit_answer(part, answer)
         }
         Some(Command::PrivateLeaderboard { leaderboard_id }) => {
-            private_leaderboard(args, &session, leaderboard_id)
+            client.show_private_leaderboard(leaderboard_id)
         }
-        _ => read(args, &session, width),
+        _ => client.show_puzzle_text(),
     }
 }
