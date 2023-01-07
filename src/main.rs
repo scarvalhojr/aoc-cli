@@ -23,8 +23,7 @@ fn main() {
             let exit_code = match err {
                 AocError::InvalidPuzzleDate(..) => USAGE_ERROR,
                 AocError::InvalidEventYear(..) => USAGE_ERROR,
-                AocError::InvalidEventDay(..) => USAGE_ERROR,
-                AocError::NonInferablePuzzleDate(..) => USAGE_ERROR,
+                AocError::InvalidPuzzleDay(..) => USAGE_ERROR,
                 AocError::LockedPuzzle(..) => USAGE_ERROR,
                 AocError::SessionFileNotFound => NO_INPUT,
                 AocError::SessionFileReadError { .. } => IO_ERROR,

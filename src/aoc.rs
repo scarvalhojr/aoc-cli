@@ -1,4 +1,4 @@
-use chrono::{Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
+use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
 use colored::{Color, Colorize};
 use dirs::{config_dir, home_dir};
 use html2md::parse_html;
@@ -64,10 +64,7 @@ pub enum AocError {
     InvalidEventYear(PuzzleYear),
 
     #[error("{0} is not a valid Advent of Code day")]
-    InvalidEventDay(PuzzleDay),
-
-    #[error("Could not infer puzzle day for year {0}")]
-    NonInferablePuzzleDate(PuzzleYear),
+    InvalidPuzzleDay(PuzzleDay),
 
     #[error("Puzzle {0} of {1} is still locked")]
     LockedPuzzle(PuzzleDay, PuzzleYear),
@@ -121,6 +118,7 @@ pub fn is_valid_day(day: PuzzleDay) -> bool {
 
 pub struct AocClient {
     session_cookie: String,
+    unlock_datetime: DateTime<FixedOffset>,
     year: PuzzleYear,
     day: PuzzleDay,
     output_width: usize,
@@ -145,25 +143,16 @@ impl AocClient {
         AocClientBuilder::default()
     }
 
-    pub fn day_unlocked(&self) -> AocResult<bool> {
+    pub fn day_unlocked(&self) -> bool {
         let timezone = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET).unwrap();
         let now = timezone.from_utc_datetime(&Utc::now().naive_utc());
-        let puzzle_date =
-            NaiveDate::from_ymd_opt(self.year, DECEMBER, self.day)
-                .ok_or(AocError::InvalidPuzzleDate(self.day, self.year))?
-                .and_hms_opt(0, 0, 0)
-                .unwrap();
-        let unlock_time = timezone.from_local_datetime(&puzzle_date).single();
-
-        if let Some(time) = unlock_time {
-            Ok(now.signed_duration_since(time).num_milliseconds() >= 0)
-        } else {
-            Ok(false)
-        }
+        now.signed_duration_since(self.unlock_datetime)
+            .num_milliseconds()
+            >= 0
     }
 
     fn ensure_day_unlocked(&self) -> AocResult<()> {
-        if self.day_unlocked()? {
+        if self.day_unlocked() {
             Ok(())
         } else {
             Err(AocError::LockedPuzzle(self.day, self.year))
@@ -517,8 +506,21 @@ impl AocClientBuilder {
             }
         }
 
+        let day = self.day.unwrap();
+        let year = self.year.unwrap();
+        let timezone = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET).unwrap();
+        let local_datetime = NaiveDate::from_ymd_opt(year, DECEMBER, day)
+            .ok_or(AocError::InvalidPuzzleDate(day, year))?
+            .and_hms_opt(0, 0, 0)
+            .unwrap();
+        let unlock_datetime = timezone
+            .from_local_datetime(&local_datetime)
+            .single()
+            .ok_or(AocError::InvalidPuzzleDate(day, year))?;
+
         Ok(AocClient {
             session_cookie: self.session_cookie.clone().unwrap(),
+            unlock_datetime,
             year: self.year.unwrap(),
             day: self.day.unwrap(),
             output_width: self.output_width,
@@ -611,7 +613,7 @@ impl AocClientBuilder {
             self.day = Some(day);
             Ok(self)
         } else {
-            Err(AocError::InvalidEventDay(day))
+            Err(AocError::InvalidPuzzleDay(day))
         }
     }
 
@@ -621,19 +623,18 @@ impl AocClientBuilder {
         }
 
         let event_year = self.year.unwrap();
-        if let Some(offset) = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET) {
-            let now = offset.from_utc_datetime(&Utc::now().naive_utc());
-            if now.year() == event_year
-                && now.month() == DECEMBER
-                && now.day() <= LAST_PUZZLE_DAY
-            {
-                return self.day(now.day());
-            }
+        let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)
+            .unwrap()
+            .from_utc_datetime(&Utc::now().naive_utc());
 
+        if now.year() == event_year
+            && now.month() == DECEMBER
+            && now.day() <= LAST_PUZZLE_DAY
+        {
+            return self.day(now.day());
+        } else {
             return self.day(LAST_PUZZLE_DAY);
         }
-
-        Err(AocError::NonInferablePuzzleDate(event_year))
     }
 
     pub fn output_width(&mut self, width: usize) -> &mut Self {
