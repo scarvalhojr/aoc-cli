@@ -625,16 +625,16 @@ impl AocClientBuilder {
 
         if event_year == now.year() && now.month() == DECEMBER {
             if now.day() <= LAST_PUZZLE_DAY {
-                return self.day(now.day());
+                self.day(now.day())
             } else {
-                return self.day(LAST_PUZZLE_DAY);
+                self.day(LAST_PUZZLE_DAY)
             }
         } else if event_year < now.year() {
             // For past events, return the last puzzle day
-            return self.day(LAST_PUZZLE_DAY);
+            self.day(LAST_PUZZLE_DAY)
         } else {
             // For future events, return the first puzzle day
-            return self.day(FIRST_PUZZLE_DAY);
+            self.day(FIRST_PUZZLE_DAY)
         }
     }
 
