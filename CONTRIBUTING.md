@@ -55,6 +55,9 @@ it finds, and make sure your code is properly formatted with `cargo fmt`.
   - `[u]nset-config` - restore default settings in configuratio file
     (e.g. `aoc unset-config year`).
 
+- Give user the option to overwrite or rename a downloaded file if it already
+  exists (rather than fail).
+
 - Generate shell completion
 
 - Add tests!!!

@@ -8,14 +8,14 @@ use log::{debug, info, warn};
 use regex::Regex;
 use reqwest::blocking::Client as HttpClient;
 use reqwest::header::{
-    HeaderMap, HeaderValue, InvalidHeaderValue, CONTENT_TYPE, COOKIE,
-    USER_AGENT,
+    HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE, USER_AGENT,
 };
 use reqwest::redirect::Policy;
 use serde::Deserialize;
 use std::cmp::{Ordering, Reverse};
 use std::collections::HashMap;
 use std::env;
+use std::fmt::{Display, Formatter};
 use std::fs::{read_to_string, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -23,8 +23,14 @@ use thiserror::Error;
 
 pub type PuzzleYear = i32;
 pub type PuzzleDay = u32;
+pub type LeaderboardId = u32;
 pub type MemberId = u64;
 pub type Score = u64;
+
+pub enum PuzzlePart {
+    PartOne,
+    PartTwo,
+}
 
 const FIRST_EVENT_YEAR: PuzzleYear = 2015;
 const DECEMBER: u32 = 12;
@@ -79,17 +85,11 @@ pub enum AocError {
         source: std::io::Error,
     },
 
-    #[error("Invalid session cookie: {source}")]
-    InvalidSessionCookie {
-        #[from]
-        source: InvalidHeaderValue,
-    },
+    #[error("Invalid session cookie")]
+    InvalidSessionCookie,
 
-    #[error("HTTP request error: {source}")]
-    HttpRequestError {
-        #[from]
-        source: reqwest::Error,
-    },
+    #[error("HTTP request error: {0}")]
+    HttpRequestError(#[from] reqwest::Error),
 
     #[error("Failed to parse Advent of Code response")]
     AocResponseError,
@@ -106,14 +106,12 @@ pub enum AocError {
 
     #[error("Failed to create client due to missing field: {0}")]
     ClientFieldMissing(String),
-}
 
-pub fn is_valid_year(year: PuzzleYear) -> bool {
-    year >= FIRST_EVENT_YEAR
-}
+    #[error("Invalid puzzle part number")]
+    InvalidPuzzlePart,
 
-pub fn is_valid_day(day: PuzzleDay) -> bool {
-    (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY).contains(&day)
+    #[error("Output width must be greater than zero")]
+    InvalidOutputWidth,
 }
 
 pub struct AocClient {
@@ -200,8 +198,18 @@ impl AocClient {
             .map_err(AocError::from)
     }
 
-    pub fn submit_answer(&self, part: &str, answer: &str) -> AocResult<()> {
+    pub fn submit_answer<P, D>(
+        &self,
+        puzzle_part: P,
+        answer: D,
+    ) -> AocResult<String>
+    where
+        P: TryInto<PuzzlePart>,
+        AocError: From<P::Error>,
+        D: Display,
+    {
         self.ensure_day_unlocked()?;
+        let part: PuzzlePart = puzzle_part.try_into()?;
 
         debug!(
             "🦌 Submitting answer for part {part}, day {}, {}",
@@ -213,12 +221,26 @@ impl AocClient {
             self.year, self.day
         );
         let content_type = "application/x-www-form-urlencoded";
-        let response = http_client(&self.session_cookie, content_type)?
+        http_client(&self.session_cookie, content_type)?
             .post(url)
-            .body(format!("level={}&answer={}", part, answer))
+            .body(format!("level={part}&answer={answer}"))
             .send()
             .and_then(|response| response.error_for_status())
-            .and_then(|response| response.text())?;
+            .and_then(|response| response.text())
+            .map_err(AocError::HttpRequestError)
+    }
+
+    pub fn submit_answer_and_show_result<P, D>(
+        &self,
+        part: P,
+        answer: D,
+    ) -> AocResult<()>
+    where
+        P: TryInto<PuzzlePart>,
+        AocError: From<P::Error>,
+        D: Display,
+    {
+        let response = self.submit_answer(part, answer)?;
         let result = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
             .unwrap()
             .captures(&response)
@@ -352,14 +374,14 @@ impl AocClient {
 
     fn get_private_leaderboard(
         &self,
-        leaderboard_id: &str,
+        leaderboard_id: LeaderboardId,
     ) -> AocResult<PrivateLeaderboard> {
         debug!("🦌 Fetching private leaderboard {leaderboard_id}");
 
         let url = format!(
             "https://adventofcode.com/{}/leaderboard/private/view\
             /{leaderboard_id}.json",
-            self.year
+            self.year,
         );
         let response = http_client(&self.session_cookie, "application/json")?
             .get(url)
@@ -375,42 +397,12 @@ impl AocClient {
         response.json().map_err(AocError::from)
     }
 
-    pub fn current_event_day(&self) -> Option<PuzzleDay> {
-        let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)?
-            .from_utc_datetime(&Utc::now().naive_utc());
-
-        if now.year() == self.year && now.month() == DECEMBER {
-            if now.day() > LAST_PUZZLE_DAY {
-                Some(LAST_PUZZLE_DAY)
-            } else {
-                Some(now.day())
-            }
-        } else {
-            None
-        }
-    }
-
-    pub fn last_unlocked_day(&self) -> AocResult<PuzzleDay> {
-        if let Some(day) = self.current_event_day() {
-            return Ok(day);
-        }
-
-        let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)
-            .unwrap()
-            .from_utc_datetime(&Utc::now().naive_utc());
-
-        if self.year >= FIRST_EVENT_YEAR && self.year < now.year() {
-            Ok(LAST_PUZZLE_DAY)
-        } else {
-            Err(AocError::InvalidEventYear(self.year))
-        }
-    }
-
     pub fn show_private_leaderboard(
         &self,
-        leaderboard_id: &str,
+        leaderboard_id: LeaderboardId,
     ) -> AocResult<()> {
-        let last_unlocked_day = self.last_unlocked_day()?;
+        let last_unlocked_day = last_unlocked_day(self.year)
+            .ok_or(AocError::InvalidEventYear(self.year))?;
         let leaderboard = self.get_private_leaderboard(leaderboard_id)?;
         let owner_name = leaderboard
             .get_owner_name()
@@ -530,11 +522,15 @@ impl AocClientBuilder {
         })
     }
 
-    pub fn session_cookie<'a>(
-        &'a mut self,
-        session: &str,
-    ) -> AocResult<&'a mut Self> {
-        self.session_cookie = Some(session.trim().to_string());
+    pub fn session_cookie(
+        &mut self,
+        session_cookie: impl AsRef<str>,
+    ) -> AocResult<&mut Self> {
+        let cookie = session_cookie.as_ref().trim();
+        if cookie.is_empty() || !cookie.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err(AocError::InvalidSessionCookie);
+        }
+        self.session_cookie = Some(cookie.to_string());
         Ok(self)
     }
 
@@ -586,7 +582,7 @@ impl AocClientBuilder {
     }
 
     pub fn year(&mut self, year: PuzzleYear) -> AocResult<&mut Self> {
-        if is_valid_year(year) {
+        if year >= FIRST_EVENT_YEAR {
             self.year = Some(year);
             Ok(self)
         } else {
@@ -609,7 +605,7 @@ impl AocClientBuilder {
     }
 
     pub fn day(&mut self, day: PuzzleDay) -> AocResult<&mut Self> {
-        if is_valid_day(day) {
+        if (FIRST_PUZZLE_DAY..=LAST_PUZZLE_DAY).contains(&day) {
             self.day = Some(day);
             Ok(self)
         } else {
@@ -627,19 +623,28 @@ impl AocClientBuilder {
             .unwrap()
             .from_utc_datetime(&Utc::now().naive_utc());
 
-        if now.year() == event_year
-            && now.month() == DECEMBER
-            && now.day() <= LAST_PUZZLE_DAY
-        {
-            return self.day(now.day());
-        } else {
+        if event_year == now.year() && now.month() == DECEMBER {
+            if now.day() <= LAST_PUZZLE_DAY {
+                return self.day(now.day());
+            } else {
+                return self.day(LAST_PUZZLE_DAY);
+            }
+        } else if event_year < now.year() {
+            // For past events, return the last puzzle day
             return self.day(LAST_PUZZLE_DAY);
+        } else {
+            // For future events, return the first puzzle day
+            return self.day(FIRST_PUZZLE_DAY);
         }
     }
 
-    pub fn output_width(&mut self, width: usize) -> &mut Self {
-        self.output_width = width;
-        self
+    pub fn output_width(&mut self, width: usize) -> AocResult<&mut Self> {
+        if width > 0 {
+            self.output_width = width;
+            Ok(self)
+        } else {
+            Err(AocError::InvalidOutputWidth)
+        }
     }
 
     pub fn overwrite_file(&mut self, overwrite: bool) -> &mut Self {
@@ -648,12 +653,31 @@ impl AocClientBuilder {
     }
 }
 
+pub fn last_unlocked_day(year: PuzzleYear) -> Option<PuzzleDay> {
+    let now = FixedOffset::east_opt(RELEASE_TIMEZONE_OFFSET)
+        .unwrap()
+        .from_utc_datetime(&Utc::now().naive_utc());
+
+    if year == now.year() && now.month() == DECEMBER {
+        if now.day() > LAST_PUZZLE_DAY {
+            Some(LAST_PUZZLE_DAY)
+        } else {
+            Some(now.day())
+        }
+    } else if year >= FIRST_EVENT_YEAR && year < now.year() {
+        Some(LAST_PUZZLE_DAY)
+    } else {
+        None
+    }
+}
+
 fn http_client(
     session_cookie: &str,
     content_type: &str,
 ) -> AocResult<HttpClient> {
     let cookie_header =
-        HeaderValue::from_str(&format!("session={}", session_cookie.trim()))?;
+        HeaderValue::from_str(&format!("session={}", session_cookie.trim()))
+            .map_err(|_| AocError::InvalidSessionCookie)?;
     let content_type_header = HeaderValue::from_str(content_type).unwrap();
     let user_agent = format!("{PKG_REPO} {PKG_VERSION}");
     let user_agent_header = HeaderValue::from_str(&user_agent).unwrap();
@@ -747,5 +771,34 @@ impl PartialOrd for Member {
 impl PartialEq for Member {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
+    }
+}
+
+impl Display for PuzzlePart {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::PartOne => write!(f, "1"),
+            Self::PartTwo => write!(f, "2"),
+        }
+    }
+}
+
+impl TryFrom<&String> for PuzzlePart {
+    type Error = AocError;
+
+    fn try_from(s: &String) -> Result<Self, Self::Error> {
+        s.as_str().try_into()
+    }
+}
+
+impl TryFrom<&str> for PuzzlePart {
+    type Error = AocError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        match s {
+            "1" => Ok(Self::PartOne),
+            "2" => Ok(Self::PartTwo),
+            _ => Err(AocError::InvalidPuzzlePart),
+        }
     }
 }

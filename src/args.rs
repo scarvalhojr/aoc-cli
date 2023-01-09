@@ -1,7 +1,5 @@
-use crate::{is_valid_day, is_valid_year, PuzzleDay, PuzzleYear};
+use crate::{LeaderboardId, PuzzleDay, PuzzleYear};
 use clap::{Parser, Subcommand};
-use std::fmt::Display;
-use std::str::FromStr;
 
 #[derive(Parser, Debug)]
 #[command(version, about, infer_subcommands = true)]
@@ -10,11 +8,11 @@ pub struct Args {
     pub command: Option<Command>,
 
     /// Puzzle day [default: last unlocked day (during Advent of Code month)]
-    #[arg(short, long, global = true, value_parser = valid_day)]
+    #[arg(short, long, global = true)]
     pub day: Option<PuzzleDay>,
 
     /// Puzzle year [default: year of current or last Advent of Code event]
-    #[arg(short, long, global = true, value_parser = valid_year)]
+    #[arg(short, long, global = true)]
     pub year: Option<PuzzleYear>,
 
     /// Path to session cookie file [default: ~/.adventofcode.session]
@@ -22,7 +20,7 @@ pub struct Args {
     pub session_file: Option<String>,
 
     /// Width at which to wrap output [default: terminal width]
-    #[arg(short, long, global = true, value_parser = valid_width)]
+    #[arg(short, long, global = true)]
     pub width: Option<usize>,
 
     /// Overwrite files if they already exist
@@ -104,43 +102,6 @@ pub enum Command {
     #[command(visible_alias = "p")]
     PrivateLeaderboard {
         /// Private leaderboard ID
-        leaderboard_id: String,
+        leaderboard_id: LeaderboardId,
     },
-}
-
-fn convert_number<T: FromStr>(s: &str) -> Result<T, String>
-where
-    <T as FromStr>::Err: Display,
-{
-    s.parse::<T>().map_err(|err| format!("{}", err))
-}
-
-fn valid_day(s: &str) -> Result<PuzzleDay, String> {
-    convert_number(s).and_then(|day| {
-        if is_valid_day(day) {
-            Ok(day)
-        } else {
-            Err("invalid Advent of Code day".to_string())
-        }
-    })
-}
-
-fn valid_year(s: &str) -> Result<PuzzleYear, String> {
-    convert_number(s).and_then(|day| {
-        if is_valid_year(day) {
-            Ok(day)
-        } else {
-            Err("invalid Advent of Code year".to_string())
-        }
-    })
-}
-
-fn valid_width(s: &str) -> Result<usize, String> {
-    convert_number(s).and_then(|width| {
-        if width > 0 {
-            Ok(width)
-        } else {
-            Err("invalid output width".to_string())
-        }
-    })
 }

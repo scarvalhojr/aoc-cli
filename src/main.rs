@@ -33,6 +33,8 @@ fn main() {
                 AocError::PrivateLeaderboardNotAvailable => FAILURE,
                 AocError::FileWriteError { .. } => CANNOT_CREATE,
                 AocError::ClientFieldMissing(..) => USAGE_ERROR,
+                AocError::InvalidPuzzlePart => USAGE_ERROR,
+                AocError::InvalidOutputWidth => USAGE_ERROR,
             };
 
             if exit_code == FAILURE {
@@ -71,15 +73,15 @@ fn build_client(args: &Args) -> AocResult<AocClient> {
         builder.session_cookie_from_default_locations()?;
     }
 
-    match (&args.year, &args.day) {
-        (Some(y), Some(d)) => builder.year(*y)?.day(*d)?,
-        (Some(y), None) => builder.year(*y)?.latest_puzzle_day()?,
-        (None, Some(d)) => builder.latest_event_year()?.day(*d)?,
+    match (args.year, args.day) {
+        (Some(year), Some(day)) => builder.year(year)?.day(day)?,
+        (Some(year), None) => builder.year(year)?.latest_puzzle_day()?,
+        (None, Some(day)) => builder.latest_event_year()?.day(day)?,
         (None, None) => builder.latest_puzzle_day()?,
     };
 
-    if let Some(width) = &args.width {
-        builder.output_width(*width);
+    if let Some(width) = args.width {
+        builder.output_width(width)?;
     }
 
     builder.overwrite_file(args.overwrite).build()
@@ -98,10 +100,10 @@ fn run(args: &Args, client: AocClient) -> AocResult<()> {
             Ok(())
         }
         Some(Command::Submit { part, answer }) => {
-            client.submit_answer(part, answer)
+            client.submit_answer_and_show_result(part, answer)
         }
         Some(Command::PrivateLeaderboard { leaderboard_id }) => {
-            client.show_private_leaderboard(leaderboard_id)
+            client.show_private_leaderboard(*leaderboard_id)
         }
         _ => client.show_puzzle_text(),
     }
