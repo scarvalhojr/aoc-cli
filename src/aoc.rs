@@ -18,7 +18,7 @@ use std::env;
 use std::fmt::{Display, Formatter};
 use std::fs::{read_to_string, OpenOptions};
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 pub type PuzzleYear = i32;
@@ -120,9 +120,9 @@ pub struct AocClient {
     year: PuzzleYear,
     day: PuzzleDay,
     output_width: usize,
-    overwrite_file: bool,
-    input_file: String,
-    puzzle_file: String,
+    overwrite_files: bool,
+    input_filename: PathBuf,
+    puzzle_filename: PathBuf,
 }
 
 #[must_use]
@@ -131,9 +131,9 @@ pub struct AocClientBuilder {
     year: Option<PuzzleYear>,
     day: Option<PuzzleDay>,
     output_width: usize,
-    overwrite_file: bool,
-    input_file: String,
-    puzzle_file: String,
+    overwrite_files: bool,
+    input_filename: PathBuf,
+    puzzle_filename: PathBuf,
 }
 
 impl AocClient {
@@ -263,15 +263,19 @@ impl AocClient {
     pub fn save_puzzle_markdown(&self) -> AocResult<()> {
         let puzzle_html = self.get_puzzle_html()?;
         let puzzle_markdow = parse_html(&puzzle_html);
-        save_file(&self.puzzle_file, self.overwrite_file, &puzzle_markdow)?;
-        info!("🎅 Saved puzzle to '{}'", &self.puzzle_file);
+        save_file(
+            &self.puzzle_filename,
+            self.overwrite_files,
+            &puzzle_markdow,
+        )?;
+        info!("🎅 Saved puzzle to '{}'", self.puzzle_filename.display());
         Ok(())
     }
 
     pub fn save_input(&self) -> AocResult<()> {
         let input = self.get_input()?;
-        save_file(&self.input_file, self.overwrite_file, &input)?;
-        info!("🎅 Saved input to '{}'", &self.input_file);
+        save_file(&self.input_filename, self.overwrite_files, &input)?;
+        info!("🎅 Saved input to '{}'", self.input_filename.display());
         Ok(())
     }
 
@@ -470,18 +474,18 @@ impl Default for AocClientBuilder {
         let output_width = term_size::dimensions()
             .map(|(w, _)| w)
             .unwrap_or(DEFAULT_COL_WIDTH);
-        let overwrite_file = false;
-        let input_file = "input".to_string();
-        let puzzle_file = "puzzle.md".to_string();
+        let overwrite_files = false;
+        let input_filename = "input".into();
+        let puzzle_filename = "puzzle.md".into();
 
         Self {
             session_cookie,
             year,
             day,
             output_width,
-            overwrite_file,
-            input_file,
-            puzzle_file,
+            overwrite_files,
+            input_filename,
+            puzzle_filename,
         }
     }
 }
@@ -516,9 +520,9 @@ impl AocClientBuilder {
             year: self.year.unwrap(),
             day: self.day.unwrap(),
             output_width: self.output_width,
-            overwrite_file: self.overwrite_file,
-            input_file: self.input_file.clone(),
-            puzzle_file: self.puzzle_file.clone(),
+            overwrite_files: self.overwrite_files,
+            input_filename: self.input_filename.clone(),
+            puzzle_filename: self.puzzle_filename.clone(),
         })
     }
 
@@ -654,8 +658,18 @@ impl AocClientBuilder {
         }
     }
 
-    pub fn overwrite_file(&mut self, overwrite: bool) -> &mut Self {
-        self.overwrite_file = overwrite;
+    pub fn overwrite_files(&mut self, overwrite: bool) -> &mut Self {
+        self.overwrite_files = overwrite;
+        self
+    }
+
+    pub fn input_filename<P: AsRef<Path>>(&mut self, path: P) -> &mut Self {
+        self.input_filename = path.as_ref().into();
+        self
+    }
+
+    pub fn puzzle_filename<P: AsRef<Path>>(&mut self, path: P) -> &mut Self {
+        self.puzzle_filename = path.as_ref().into();
         self
     }
 }
@@ -701,7 +715,11 @@ fn http_client(
         .map_err(AocError::from)
 }
 
-fn save_file(filename: &str, overwrite: bool, contents: &str) -> AocResult<()> {
+fn save_file<P: AsRef<Path>>(
+    path: P,
+    overwrite: bool,
+    contents: &str,
+) -> AocResult<()> {
     let mut file = OpenOptions::new();
     if overwrite {
         file.create(true);
@@ -711,10 +729,10 @@ fn save_file(filename: &str, overwrite: bool, contents: &str) -> AocResult<()> {
 
     file.write(true)
         .truncate(true)
-        .open(filename)
+        .open(&path)
         .and_then(|mut file| file.write_all(contents.as_bytes()))
         .map_err(|err| AocError::FileWriteError {
-            filename: filename.to_string(),
+            filename: path.as_ref().to_string_lossy().into(),
             source: err,
         })
 }

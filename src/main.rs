@@ -84,7 +84,11 @@ fn build_client(args: &Args) -> AocResult<AocClient> {
         builder.output_width(width)?;
     }
 
-    builder.overwrite_file(args.overwrite).build()
+    builder
+        .input_filename(&args.input_file)
+        .puzzle_filename(&args.puzzle_file)
+        .overwrite_files(args.overwrite)
+        .build()
 }
 
 fn run(args: &Args, client: AocClient) -> AocResult<()> {
