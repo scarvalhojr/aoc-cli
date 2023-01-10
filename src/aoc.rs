@@ -538,29 +538,36 @@ impl AocClientBuilder {
         &mut self,
     ) -> AocResult<&mut Self> {
         if let Ok(cookie) = env::var(SESSION_COOKIE_ENV_VAR) {
-            debug!(
-                "🍪 Loaded session cookie from '{SESSION_COOKIE_ENV_VAR}' \
-                environment variable"
+            if !cookie.trim().is_empty() {
+                debug!(
+                    "🍪 Loading session cookie from '{SESSION_COOKIE_ENV_VAR}' \
+                    environment variable"
+                );
+
+                return self.session_cookie(&cookie);
+            }
+
+            warn!(
+                "🍪 Environment variable '{SESSION_COOKIE_ENV_VAR}' is set \
+                but it is empty, ignoring"
             );
-
-            self.session_cookie(&cookie)
-        } else {
-            let path = if let Some(home_path) = home_dir()
-                .map(|dir| dir.join(HIDDEN_SESSION_COOKIE_FILE))
-                .filter(|file| file.exists())
-            {
-                home_path
-            } else if let Some(config_path) = config_dir()
-                .map(|dir| dir.join(SESSION_COOKIE_FILE))
-                .filter(|file| file.exists())
-            {
-                config_path
-            } else {
-                return Err(AocError::SessionFileNotFound);
-            };
-
-            self.session_cookie_from_file(path)
         }
+
+        let path = if let Some(home_path) = home_dir()
+            .map(|dir| dir.join(HIDDEN_SESSION_COOKIE_FILE))
+            .filter(|file| file.exists())
+        {
+            home_path
+        } else if let Some(config_path) = config_dir()
+            .map(|dir| dir.join(SESSION_COOKIE_FILE))
+            .filter(|file| file.exists())
+        {
+            config_path
+        } else {
+            return Err(AocError::SessionFileNotFound);
+        };
+
+        self.session_cookie_from_file(path)
     }
 
     pub fn session_cookie_from_file<P: AsRef<Path>>(
@@ -575,7 +582,7 @@ impl AocClientBuilder {
         })?;
 
         debug!(
-            "🍪 Loaded session cookie from '{}'",
+            "🍪 Loading session cookie from '{}'",
             file.as_ref().display()
         );
         self.session_cookie(&cookie)
