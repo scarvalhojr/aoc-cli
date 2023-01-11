@@ -827,3 +827,15 @@ impl TryFrom<&str> for PuzzlePart {
         }
     }
 }
+
+impl TryFrom<i64> for PuzzlePart {
+    type Error = AocError;
+
+    fn try_from(n: i64) -> Result<Self, Self::Error> {
+        match n {
+            1 => Ok(Self::PartOne),
+            2 => Ok(Self::PartTwo),
+            _ => Err(AocError::InvalidPuzzlePart),
+        }
+    }
+}

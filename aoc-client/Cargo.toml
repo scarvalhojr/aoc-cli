@@ -1,12 +1,11 @@
 [package]
 name = "aoc-client"
 description = "Advent of Code client library"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Sergio de Carvalho <scarvalhojr@gmail.com>"]
-categories = ["command-line-utilities"]
 edition = "2021"
 repository = "https://github.com/scarvalhojr/aoc-cli"
-documentation = "https://docs.rs/crate/aoc-cli/latest"
+documentation = "https://docs.rs/crate/aoc-client/latest"
 readme = "README.md"
 license = "MIT"
 

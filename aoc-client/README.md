@@ -14,14 +14,14 @@ tool but can also be integrated into other projects.
 
 Add the following dependency to your Rust project (in `Cargo.toml`):
 
-```
+```toml
 [dependencies]
 aoc-client = "0.1"
 ```
 
 Create a `AocClient` instance and call its methods:
 
-```Rust
+```rust
 use aoc_client::{AocClient, AocResult};
 
 fn main() -> AocResult<()> {
@@ -44,3 +44,14 @@ fn main() -> AocResult<()> {
     Ok(())
 }
 ```
+
+## Contribute 🦌
+
+Feedback and pull requests are welcome. Please see [CONTRIBUTING](..\CONTRIBUTING.md)
+for guidelines and ideas.
+
+## Support Advent of Code 🎁
+
+Advent of Code is a free online Advent calendar of small programming puzzles
+created by [Eric Wastl](http://was.tl/) and maintained by volunteers. Please
+consider [supporting their work](https://adventofcode.com/support).
