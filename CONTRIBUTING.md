@@ -60,4 +60,4 @@ it finds, and make sure your code is properly formatted with `cargo fmt`.
 
 - Generate shell completion
 
-- Add tests!!!
+- Add tests and documentation!

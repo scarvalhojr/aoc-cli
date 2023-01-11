@@ -1,8 +1,7 @@
-mod aoc;
 mod args;
 
-use aoc::*;
-use args::*;
+use aoc_client::{AocClient, AocError, AocResult};
+use args::{Args, Command};
 use clap::{crate_description, crate_name, Parser};
 use env_logger::{Builder, Env};
 use exit_code::*;

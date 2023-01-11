@@ -1,4 +1,4 @@
-use crate::{LeaderboardId, PuzzleDay, PuzzleYear};
+use aoc_client::{LeaderboardId, PuzzleDay, PuzzleYear};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]

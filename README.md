@@ -1,4 +1,4 @@
-# aoc-cli
+# aoc-cli and aoc-client
 
 [![Build and test](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/build-and-test.yml)
 [![Clippy and format](https://github.com/scarvalhojr/aoc-cli/actions/workflows/clippy-and-fmt.yml/badge.svg)](https://github.com/scarvalhojr/aoc-cli/actions/workflows/clippy-and-fmt.yml)
@@ -7,21 +7,23 @@
 
 ## Advent of Code command-line tool 🎄
 
-Read [Advent of Code](https://adventofcode.com) puzzle descriptions, download
-puzzle input, submit answers and check if they are correct, all from the
-comfort of your terminal.
+`aoc-cli` is a command-line tool for [Advent of Code](https://adventofcode.com).
+It lets you read puzzle descriptions, download puzzle input, submit answers and
+check if they are correct, all from the comfort of your terminal. It is built
+using the [aoc-client](https://crates.io/crates/aoc-client) library.
 
 ## Features ⭐️
 
-- Validate arguments (year, day, part) and check if puzzle is unlocked.
-- Infer puzzle day when possible (last unlocked puzzle during Advent of Code
-  month).
-- If year is not provided, it is assumed to be the current or the last Advent of
-  Code event.
-- Load Advent of Code session cookie from a file.
-- Save puzzle description to a file in Markdown format.
-- Check your progress in your Advent of Code calendar.
+- Load Advent of Code session cookie from a file or environment variable.
+- Read puzzle description and optionally save it to a file in Markdown format.
+- Download puzzle input.
+- Submit your puzzle answer and check if it is correct.
+- Check your progress in your Advent of Code calendar (stars collected).
 - Show the state of private leaderboards.
+- Validate arguments (year, day, puzzle part) and check if puzzle is unlocked.
+- If year is not provided, default to the current or last Advent of Code event.
+- Infer puzzle day when possible (last unlocked puzzle for current and past
+  events).
 
 ## Installation options 🎅
 
