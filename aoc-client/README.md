@@ -47,7 +47,7 @@ fn main() -> AocResult<()> {
 
 ## Contribute 🦌
 
-Feedback and pull requests are welcome. Please see [CONTRIBUTING](..\CONTRIBUTING.md)
+Feedback and pull requests are welcome. Please see [CONTRIBUTING](../CONTRIBUTING.md)
 for guidelines and ideas.
 
 ## Support Advent of Code 🎁
