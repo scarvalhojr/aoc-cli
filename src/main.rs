@@ -87,6 +87,7 @@ fn build_client(args: &Args) -> AocResult<AocClient> {
         .input_filename(&args.input_file)
         .puzzle_filename(&args.puzzle_file)
         .overwrite_files(args.overwrite)
+        .show_html_markup(args.show_html_markup)
         .build()
 }
 
@@ -103,11 +104,11 @@ fn run(args: &Args, client: AocClient) -> AocResult<()> {
             Ok(())
         }
         Some(Command::Submit { part, answer }) => {
-            client.submit_answer_and_show_result(part, answer)
+            client.submit_answer_and_show_outcome(part, answer)
         }
         Some(Command::PrivateLeaderboard { leaderboard_id }) => {
             client.show_private_leaderboard(*leaderboard_id)
         }
-        _ => client.show_puzzle_text(),
+        _ => client.show_puzzle(),
     }
 }

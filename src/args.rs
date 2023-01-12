@@ -64,6 +64,10 @@ pub struct Args {
     )]
     pub puzzle_file: String,
 
+    /// Show HTML markup including links
+    #[arg(short = 'm', long, global = true)]
+    pub show_html_markup: bool,
+
     /// Restrict log messages to errors only
     #[arg(short, long, global = true)]
     pub quiet: bool,

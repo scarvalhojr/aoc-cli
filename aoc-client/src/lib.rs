@@ -2,7 +2,10 @@ use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
 use colored::{Color, Colorize};
 use dirs::{config_dir, home_dir};
 use html2md::parse_html;
-use html2text::from_read;
+use html2text::{
+    from_read, from_read_with_decorator,
+    render::text_renderer::TrivialDecorator,
+};
 use http::StatusCode;
 use log::{debug, info, warn};
 use regex::Regex;
@@ -24,8 +27,8 @@ use thiserror::Error;
 pub type PuzzleYear = i32;
 pub type PuzzleDay = u32;
 pub type LeaderboardId = u32;
-pub type MemberId = u64;
-pub type Score = u64;
+type MemberId = u64;
+type Score = u64;
 
 pub enum PuzzlePart {
     PartOne,
@@ -123,6 +126,7 @@ pub struct AocClient {
     overwrite_files: bool,
     input_filename: PathBuf,
     puzzle_filename: PathBuf,
+    show_html_markup: bool,
 }
 
 #[must_use]
@@ -134,6 +138,7 @@ pub struct AocClientBuilder {
     overwrite_files: bool,
     input_filename: PathBuf,
     puzzle_filename: PathBuf,
+    show_html_markup: bool,
 }
 
 impl AocClient {
@@ -230,7 +235,7 @@ impl AocClient {
             .map_err(AocError::HttpRequestError)
     }
 
-    pub fn submit_answer_and_show_result<P, D>(
+    pub fn submit_answer_and_show_outcome<P, D>(
         &self,
         part: P,
         answer: D,
@@ -241,7 +246,7 @@ impl AocClient {
         D: Display,
     {
         let response = self.submit_answer(part, answer)?;
-        let result = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+        let outcome_html = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
             .unwrap()
             .captures(&response)
             .ok_or(AocError::AocResponseError)?
@@ -249,14 +254,13 @@ impl AocClient {
             .unwrap()
             .as_str();
 
-        println!("\n{}", from_read(result.as_bytes(), self.output_width));
+        println!("\n{}", self.html2text(outcome_html));
         Ok(())
     }
 
-    pub fn show_puzzle_text(&self) -> AocResult<()> {
+    pub fn show_puzzle(&self) -> AocResult<()> {
         let puzzle_html = self.get_puzzle_html()?;
-        let puzzle_text = from_read(puzzle_html.as_bytes(), self.output_width);
-        println!("\n{puzzle_text}");
+        println!("\n{}", self.html2text(&puzzle_html));
         Ok(())
     }
 
@@ -315,10 +319,8 @@ impl AocClient {
 
         // Remove elements that won't render well in the terminal
         let cleaned_up = Regex::new(concat!(
-            // Remove all hyperlinks
-            r#"(href="[^"]*")"#,
             // Remove 2015 "calendar-bkg"
-            r#"|(<div class="calendar-bkg">[[:space:]]*"#,
+            r#"(<div class="calendar-bkg">[[:space:]]*"#,
             r#"(<div>[^<]*</div>[[:space:]]*)*</div>)"#,
             // Remove 2017 "naughty/nice" animation
             r#"|(<div class="calendar-printer">(?s:.)*"#,
@@ -371,8 +373,13 @@ impl AocClient {
     }
 
     pub fn show_calendar(&self) -> AocResult<()> {
-        let calendar = self.get_calendar_html()?;
-        println!("\n{}", from_read(calendar.as_bytes(), self.output_width));
+        let calendar_html = self.get_calendar_html()?;
+        let calendar_text = from_read_with_decorator(
+            calendar_html.as_bytes(),
+            self.output_width,
+            TrivialDecorator::new(),
+        );
+        println!("\n{calendar_text}");
         Ok(())
     }
 
@@ -464,6 +471,18 @@ impl AocClient {
 
         Ok(())
     }
+
+    fn html2text(&self, html: &str) -> String {
+        if self.show_html_markup {
+            from_read(html.as_bytes(), self.output_width)
+        } else {
+            from_read_with_decorator(
+                html.as_bytes(),
+                self.output_width,
+                TrivialDecorator::new(),
+            )
+        }
+    }
 }
 
 impl Default for AocClientBuilder {
@@ -477,6 +496,7 @@ impl Default for AocClientBuilder {
         let overwrite_files = false;
         let input_filename = "input".into();
         let puzzle_filename = "puzzle.md".into();
+        let show_html_markup = false;
 
         Self {
             session_cookie,
@@ -486,6 +506,7 @@ impl Default for AocClientBuilder {
             overwrite_files,
             input_filename,
             puzzle_filename,
+            show_html_markup,
         }
     }
 }
@@ -523,6 +544,7 @@ impl AocClientBuilder {
             overwrite_files: self.overwrite_files,
             input_filename: self.input_filename.clone(),
             puzzle_filename: self.puzzle_filename.clone(),
+            show_html_markup: self.show_html_markup,
         })
     }
 
@@ -670,6 +692,11 @@ impl AocClientBuilder {
 
     pub fn puzzle_filename<P: AsRef<Path>>(&mut self, path: P) -> &mut Self {
         self.puzzle_filename = path.as_ref().into();
+        self
+    }
+
+    pub fn show_html_markup(&mut self, show: bool) -> &mut Self {
+        self.show_html_markup = show;
         self
     }
 }
