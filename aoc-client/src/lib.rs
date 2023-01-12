@@ -30,9 +30,18 @@ pub type LeaderboardId = u32;
 type MemberId = u64;
 type Score = u64;
 
+#[derive(Debug)]
 pub enum PuzzlePart {
     PartOne,
     PartTwo,
+}
+
+#[derive(Debug)]
+pub enum SubmissionOutcome {
+    Correct,
+    Incorrect,
+    Wait,
+    WrongLevel,
 }
 
 const FIRST_EVENT_YEAR: PuzzleYear = 2015;
@@ -203,7 +212,7 @@ impl AocClient {
             .map_err(AocError::from)
     }
 
-    pub fn submit_answer<P, D>(
+    fn submit_answer_html<P, D>(
         &self,
         puzzle_part: P,
         answer: D,
@@ -226,18 +235,55 @@ impl AocClient {
             self.year, self.day
         );
         let content_type = "application/x-www-form-urlencoded";
-        http_client(&self.session_cookie, content_type)?
+        let response = http_client(&self.session_cookie, content_type)?
             .post(url)
             .body(format!("level={part}&answer={answer}"))
             .send()
             .and_then(|response| response.error_for_status())
             .and_then(|response| response.text())
-            .map_err(AocError::HttpRequestError)
+            .map_err(AocError::HttpRequestError)?;
+
+        let outcome_html = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+            .unwrap()
+            .captures(&response)
+            .ok_or(AocError::AocResponseError)?
+            .name("main")
+            .unwrap()
+            .as_str()
+            .to_string();
+
+        Ok(outcome_html)
+    }
+
+    pub fn submit_answer<P, D>(
+        &self,
+        puzzle_part: P,
+        answer: D,
+    ) -> AocResult<SubmissionOutcome>
+    where
+        P: TryInto<PuzzlePart>,
+        AocError: From<P::Error>,
+        D: Display,
+    {
+        let outcome = self.submit_answer_html(puzzle_part, answer)?;
+        if outcome.contains("That's the right answer") {
+            Ok(SubmissionOutcome::Correct)
+        } else if outcome.contains("That's not the right answer") {
+            Ok(SubmissionOutcome::Incorrect)
+        } else if outcome.contains("You gave an answer too recently") {
+            Ok(SubmissionOutcome::Wait)
+        } else if outcome
+            .contains("You don't seem to be solving the right level")
+        {
+            Ok(SubmissionOutcome::WrongLevel)
+        } else {
+            Err(AocError::AocResponseError)
+        }
     }
 
     pub fn submit_answer_and_show_outcome<P, D>(
         &self,
-        part: P,
+        puzzle_part: P,
         answer: D,
     ) -> AocResult<()>
     where
@@ -245,16 +291,8 @@ impl AocClient {
         AocError: From<P::Error>,
         D: Display,
     {
-        let response = self.submit_answer(part, answer)?;
-        let outcome_html = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
-            .unwrap()
-            .captures(&response)
-            .ok_or(AocError::AocResponseError)?
-            .name("main")
-            .unwrap()
-            .as_str();
-
-        println!("\n{}", self.html2text(outcome_html));
+        let outcome_html = self.submit_answer_html(puzzle_part, answer)?;
+        println!("\n{}", self.html2text(&outcome_html));
         Ok(())
     }
 
