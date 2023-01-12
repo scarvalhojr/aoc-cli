@@ -42,6 +42,7 @@ it finds, and make sure your code is properly formatted with `cargo fmt`.
 - Commands:
   - `[c]alendar` - already implemented!
   - `[d]ownload` - already implemented!
+  - `[e]vent-stats` - show [event stats](https://adventofcode.com/2022/stats).
   - `[g]lobal-leaderboard` - show [global leaderboard](https://adventofcode.com/2022/leaderboard).
   - `[i]nit` - prompt for each configurable option (offering sensible defaults)
     and create a configuration file.
@@ -50,7 +51,6 @@ it finds, and make sure your code is properly formatted with `cargo fmt`.
   - `[pr]ivate-leaderboard` - already implemented!
   - `[r]ead` - already implemented!
   - `[se]t-config` - make changes to configuration file (e.g. `aoc set-config year 2015`).
-  - `[st]ats` - show [event stats](https://adventofcode.com/2022/stats).
   - `[su]bmit` - already implemented!
   - `[u]nset-config` - restore default settings in configuratio file
     (e.g. `aoc unset-config year`).
