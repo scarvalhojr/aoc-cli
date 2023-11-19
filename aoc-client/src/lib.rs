@@ -424,6 +424,36 @@ impl AocClient {
         Ok(())
     }
 
+    fn get_event_stats_html(&self) -> AocResult<String> {
+        let url = format!("https://adventofcode.com/{}/stats", self.year);
+
+        let response = reqwest::blocking::get(url)?;
+        let contents = response.error_for_status()?.text()?;
+
+        let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+            .unwrap()
+            .captures(&contents)
+            .ok_or(AocError::AocResponseError)?
+            .name("main")
+            .unwrap()
+            .as_str()
+            .to_string();
+
+        Ok(main)
+    }
+
+    pub fn show_event_stats(&self) -> AocResult<()> {
+        let stats_html = self.get_event_stats_html()?;
+
+        let stats_text = from_read_with_decorator(
+            stats_html.as_bytes(),
+            self.output_width,
+            TrivialDecorator::new(),
+        );
+        println!("\n{stats_text}");
+        Ok(())
+    }
+
     fn get_private_leaderboard(
         &self,
         leaderboard_id: LeaderboardId,
