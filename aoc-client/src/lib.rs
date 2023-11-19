@@ -384,6 +384,12 @@ impl AocClient {
         ))
         .unwrap();
 
+        let all_stars = if main.contains("calendar calendar-perfect") {
+            true
+        } else {
+            false
+        };
+
         // Remove stars that have not been collected
         let calendar = cleaned_up
             .lines()
@@ -394,13 +400,14 @@ impl AocClient {
                     .map(|c| c.as_str())
                     .unwrap_or("");
 
-                let stars = if class.contains("calendar-verycomplete") {
-                    "**"
-                } else if class.contains("calendar-complete") {
-                    "*"
-                } else {
-                    ""
-                };
+                let stars =
+                    if class.contains("calendar-verycomplete") || all_stars {
+                        "**"
+                    } else if class.contains("calendar-complete") {
+                        "*"
+                    } else {
+                        ""
+                    };
 
                 star_regex.replace(line, stars)
             })
