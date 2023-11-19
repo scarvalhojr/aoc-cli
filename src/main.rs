@@ -94,6 +94,7 @@ fn build_client(args: &Args) -> AocResult<AocClient> {
 fn run(args: &Args, client: AocClient) -> AocResult<()> {
     match &args.command {
         Some(Command::Calendar) => client.show_calendar(),
+        Some(Command::EventStats) => client.show_event_stats(),
         Some(Command::Download) => {
             if !args.input_only {
                 client.save_puzzle_markdown()?;
