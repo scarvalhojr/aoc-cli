@@ -15,13 +15,13 @@ use reqwest::header::{
 };
 use reqwest::redirect::Policy;
 use serde::Deserialize;
-use std::cmp::{Ordering, Reverse};
+use std::cmp::{self, Ordering, Reverse};
 use std::collections::HashMap;
-use std::env;
 use std::fmt::{Display, Formatter};
 use std::fs::{read_to_string, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::{env, u64};
 use thiserror::Error;
 
 pub type PuzzleYear = i32;
@@ -450,7 +450,47 @@ impl AocClient {
             self.output_width,
             TrivialDecorator::new(),
         );
-        println!("\n{stats_text}");
+
+        // number of completions loosely associated with each star
+        let star_val = stats_text
+            .split_whitespace()
+            .find(|chunk| chunk.parse::<u64>().is_ok())
+            .unwrap()
+            .parse::<u64>()
+            .unwrap();
+
+        // add color to appropriate text in explanatory sentence
+        let stats_colored = stats_text
+            .replace("Gold", &"Gold".color(GOLD).to_string())
+            .replace("silver", &"silver".color(SILVER).to_string())
+            .replacen("*", &"*".color(SILVER).to_string(), 2)
+            .replacen("*", &"*".color(GOLD).to_string(), 1);
+
+        println!("");
+        for line in stats_colored.lines().take_while(|line| !line.is_empty()) {
+            println!("{}", line);
+        }
+
+        for line in stats_colored.lines().skip_while(|line| !line.is_empty()) {
+            if line.is_empty() {
+                continue;
+            }
+            let split: Vec<&str> = line.split_whitespace().collect();
+            let gold_comps = split[1].parse::<usize>().unwrap();
+            let n_stars = split[3].len();
+
+            let gold_prop: f64 = gold_comps as f64 / star_val as f64;
+            let gold_stars = cmp::min(n_stars - 1, gold_prop.ceil() as usize);
+
+            let tmp = &line
+                .replace(split[1], &split[1].color(GOLD).to_string())
+                .replace(split[2], &split[2].color(SILVER).to_string())
+                .replace("*", &"*".color(SILVER).to_string())
+                .replacen("*", &"*".color(GOLD).to_string(), gold_stars);
+
+            println!("{}", tmp);
+        }
+
         Ok(())
     }
 
