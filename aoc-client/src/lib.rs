@@ -422,6 +422,7 @@ impl AocClient {
     }
 
     fn get_event_stats_html(&self) -> AocResult<String> {
+        debug!("🦌 Fetching event stats for {}", self.year);
         let url = format!("https://adventofcode.com/{}/stats", self.year);
 
         let response = reqwest::blocking::get(url)?;
