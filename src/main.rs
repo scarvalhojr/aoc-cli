@@ -103,6 +103,7 @@ fn run(args: &Args, client: AocClient) -> AocResult<()> {
             }
             Ok(())
         }
+        Some(Command::GlobalLeaderboard) => client.show_global_leaderboard(),
         Some(Command::Submit { part, answer }) => {
             client.submit_answer_and_show_outcome(part, answer)
         }

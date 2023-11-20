@@ -87,6 +87,10 @@ pub enum Command {
     #[command(visible_alias = "d")]
     Download,
 
+    /// Show Advent of Code global leaderboard
+    #[command(visible_alias = "g")]
+    GlobalLeaderboard,
+
     /// Read puzzle statement (the default command)
     #[command(visible_alias = "r")]
     Read,

@@ -421,6 +421,77 @@ impl AocClient {
         Ok(())
     }
 
+    fn get_global_leaderboard_html(&self) -> AocResult<String> {
+        debug!("🦌 Fetching global leaderboard for {}", self.year);
+
+        let url = format!("https://adventofcode.com/{}/leaderboard", self.year);
+        let response = reqwest::blocking::get(url)?;
+        let contents = response.error_for_status()?.text()?;
+
+        let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+            .unwrap()
+            .captures(&contents)
+            .ok_or(AocError::AocResponseError)?
+            .name("main")
+            .unwrap()
+            .as_str()
+            .to_string();
+
+        Ok(main)
+    }
+
+    pub fn show_global_leaderboard(&self) -> AocResult<()> {
+        let leaderboard_html = self.get_global_leaderboard_html()?;
+        let leadboard_text = self.html2text(&leaderboard_html);
+        const MAX_RANK_LEN: usize = 4; //"100)"
+
+        let colored_leaderboard = leadboard_text
+            .replace("(AoC++)", &"(AoC++)".color(GOLD).to_string())
+            .replace(
+                "(Sponsor)",
+                &"(Sponsor)".color(Color::BrightBlue).to_string(),
+            );
+
+        println!("");
+        for line in colored_leaderboard
+            .lines()
+            .skip_while(|line| !line.is_empty())
+            .skip(1)
+            .take_while(|line| !line.contains(")"))
+        {
+            println!("{}", line);
+        }
+
+        for line in colored_leaderboard
+            .lines()
+            .skip_while(|line| !line.is_empty())
+            .skip(1)
+            .skip_while(|line| !line.contains(")"))
+        {
+            if line.is_empty() {
+                continue;
+            }
+            let split: Vec<&str> = line.split_whitespace().collect();
+            let (rank, info) = line.split_once(" ").unwrap();
+            // normal case, entry has its own unique ranking
+            if rank.contains(")") {
+                // The longest ranking is "100)", want every other ranking to
+                // line up it's ")" with the ) in "100)"
+                let padding = " ".repeat(MAX_RANK_LEN - split[0].len());
+                println!("{}{} {}", padding, rank, info);
+            } else {
+                // in this corner case, two or more entries share the same
+                // raking, but the rank # is only given to the first entry. Under
+                // these conditions, 'rank' holds the users's score and 'info' holds
+                // the user's remaining info (e.g. name, AoC++, etc)
+                let padding = " ".repeat(MAX_RANK_LEN);
+                println!("{} {} {}", padding, rank, info);
+            }
+        }
+
+        Ok(())
+    }
+
     fn get_private_leaderboard(
         &self,
         leaderboard_id: LeaderboardId,
