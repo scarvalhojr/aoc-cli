@@ -422,7 +422,6 @@ impl AocClient {
     }
 
     fn get_personal_stats_html(&self) -> AocResult<String> {
-        // TODO: Redirect means we're not logged in
         debug!("🦌 Fetching {} personal stats", self.year);
 
         let url =
@@ -460,9 +459,34 @@ impl AocClient {
 
     pub fn show_personal_stats(&self) -> AocResult<()> {
         let stats_html = self.get_personal_stats_html()?;
-
         let stats_text = self.html2text(&stats_html);
-        println!("{}", stats_text);
+
+        // print explanatory paragraph before recoloring the text
+        for line in stats_text.lines().take_while(|line| !line.is_empty()) {
+            println!("{}", line);
+        }
+
+        let stats_text = stats_text
+            .replace(
+                "--------Part 1---------",
+                &"--------Part 1---------".color(SILVER).to_string(),
+            )
+            .replace(
+                "--------Part 2---------",
+                &"--------Part 2---------".color(GOLD).to_string(),
+            )
+            .replace("Time", &"Time".color(GOLD).to_string())
+            .replace("Rank", &"Rank".color(GOLD).to_string())
+            .replace("Score", &"Score".color(GOLD).to_string())
+            .replacen("Time", &"Time".color(SILVER).to_string(), 1)
+            .replacen("Rank", &"Rank".color(SILVER).to_string(), 2) // "Rank" also in explanation
+            .replacen("Score", &"Score".color(SILVER).to_string(), 2); // "Score" also in
+                                                                       // explanation
+
+        // just print out the day by day stats, expalanatory paragraph is recolored now
+        for line in stats_text.lines().skip_while(|line| !line.is_empty()) {
+            println!("{}", line);
+        }
 
         Ok(())
     }
