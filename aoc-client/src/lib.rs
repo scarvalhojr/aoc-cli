@@ -421,6 +421,52 @@ impl AocClient {
         Ok(())
     }
 
+    fn get_personal_stats_html(&self) -> AocResult<String> {
+        // TODO: Redirect means we're not logged in
+        debug!("🦌 Fetching {} personal stats", self.year);
+
+        let url =
+            format!("https://adventofcode.com/{}/leaderboard/self", self.year);
+        let response = http_client(&self.session_cookie, "text/html")?
+            .get(url)
+            .send()?;
+
+        if response.status() == StatusCode::NOT_FOUND {
+            // A 402 reponse means the calendar for
+            // the requested year is not yet available
+            return Err(AocError::InvalidEventYear(self.year));
+        } else if response.status() == StatusCode::FOUND {
+            // A 302 reponse is a redirect and it likely
+            // means we're not logged in
+            warn!(
+                "🍪 It looks like you are not logged in, try logging in again"
+            );
+            return Err(AocError::AocResponseError);
+        }
+
+        let contents = response.error_for_status()?.text()?;
+
+        let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+            .unwrap()
+            .captures(&contents)
+            .ok_or(AocError::AocResponseError)?
+            .name("main")
+            .unwrap()
+            .as_str()
+            .to_string();
+
+        Ok(main)
+    }
+
+    pub fn show_personal_stats(&self) -> AocResult<()> {
+        let stats_html = self.get_personal_stats_html()?;
+
+        let stats_text = self.html2text(&stats_html);
+        println!("{}", stats_text);
+
+        Ok(())
+    }
+
     fn get_private_leaderboard(
         &self,
         leaderboard_id: LeaderboardId,
