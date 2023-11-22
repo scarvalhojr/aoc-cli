@@ -425,7 +425,9 @@ impl AocClient {
         debug!("🦌 Fetching event stats for {}", self.year);
         let url = format!("https://adventofcode.com/{}/stats", self.year);
 
-        let response = reqwest::blocking::get(url)?;
+        let response = http_client(&self.session_cookie, "text/html")?
+            .get(url)
+            .send()?;
         let contents = response.error_for_status()?.text()?;
 
         let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
