@@ -384,11 +384,7 @@ impl AocClient {
         ))
         .unwrap();
 
-        let all_stars = if main.contains("calendar calendar-perfect") {
-            true
-        } else {
-            false
-        };
+        let all_stars = main.contains("calendar calendar-perfect");
 
         // Remove stars that have not been collected
         let calendar = cleaned_up
