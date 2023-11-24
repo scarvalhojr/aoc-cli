@@ -431,6 +431,11 @@ impl AocClient {
         let response = http_client(&self.session_cookie, "text/html")?
             .get(url)
             .send()?;
+        if response.status() == StatusCode::NOT_FOUND {
+            // A 404 reponse means the stats for
+            // the requested year are not yet available
+            return Err(AocError::InvalidEventYear(self.year));
+        }
         let contents = response.error_for_status()?.text()?;
 
         let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
