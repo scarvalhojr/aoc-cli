@@ -460,41 +460,57 @@ impl AocClient {
         );
 
         // number of completions loosely associated with each star
-        let star_val = stats_text
-            .split_whitespace()
-            .find(|chunk| chunk.parse::<u64>().is_ok())
+        let star_val = Regex::new(r"represents up to (?<numbers>[0-9]+) users")
             .unwrap()
-            .parse::<u64>()
-            .unwrap();
+            .captures(&stats_text)
+            .ok_or(AocError::AocResponseError)?
+            .name("numbers")
+            .unwrap()
+            .as_str()
+            .parse::<u32>()
+            .or(Err(AocError::AocResponseError))?;
 
         // add color to appropriate text in explanatory sentence
         let stats_colored = stats_text
             .replace("Gold", &"Gold".color(GOLD).to_string())
             .replace("silver", &"silver".color(SILVER).to_string())
-            .replacen("*", &"*".color(SILVER).to_string(), 2)
-            .replacen("*", &"*".color(GOLD).to_string(), 1);
+            .replacen('*', &"*".color(SILVER).to_string(), 2)
+            .replacen('*', &"*".color(GOLD).to_string(), 1);
 
-        println!("");
+        println!();
         for line in stats_colored.lines().take_while(|line| !line.is_empty()) {
             println!("{}", line);
         }
+
+        let day_re = Regex::new(
+            r"(?<day>[0-9]+)([ ]+)(?<n_gold>[0-9]+)([ ]+)(?<n_silver>[0-9]+)([ ]+)(?<stars>[*]+)",
+        )
+        .unwrap();
 
         for line in stats_colored.lines().skip_while(|line| !line.is_empty()) {
             if line.is_empty() {
                 continue;
             }
-            let split: Vec<&str> = line.split_whitespace().collect();
-            let gold_comps = split[1].parse::<usize>().unwrap();
-            let n_stars = split[3].len();
+            let caps =
+                day_re.captures(line).ok_or(AocError::AocResponseError)?;
+
+            let n_gold_str = caps.name("n_gold").unwrap().as_str().to_string();
+            let gold_comps = n_gold_str
+                .parse::<u32>()
+                .or(Err(AocError::AocResponseError))?;
+            let n_silver_str =
+                caps.name("n_silver").unwrap().as_str().to_string();
+
+            let n_stars = caps.name("stars").unwrap().as_str().len();
 
             let gold_prop: f64 = gold_comps as f64 / star_val as f64;
             let gold_stars = cmp::min(n_stars - 1, gold_prop.ceil() as usize);
 
             let tmp = &line
-                .replace(split[1], &split[1].color(GOLD).to_string())
-                .replace(split[2], &split[2].color(SILVER).to_string())
-                .replace("*", &"*".color(SILVER).to_string())
-                .replacen("*", &"*".color(GOLD).to_string(), gold_stars);
+                .replace(&n_gold_str, &n_gold_str.color(GOLD).to_string())
+                .replace(&n_silver_str, &n_silver_str.color(SILVER).to_string())
+                .replace('*', &"*".color(SILVER).to_string())
+                .replacen('*', &"*".color(GOLD).to_string(), gold_stars);
 
             println!("{}", tmp);
         }
