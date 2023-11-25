@@ -450,7 +450,13 @@ impl AocClient {
     pub fn show_global_leaderboard(&self) -> AocResult<()> {
         let leaderboard_html = self.get_global_leaderboard_html()?;
         let leadboard_text = self.html2text(&leaderboard_html);
-        const MAX_RANK_LEN: usize = 4; //"100)"
+        const MAX_RANK_LEN: usize = 3; //"100"
+
+        let empty_str = "Nothing to show on the leaderboard... yet.";
+        if leadboard_text.contains(empty_str) {
+            println!("{}", empty_str);
+            return Ok(());
+        }
 
         let colored_leaderboard = leadboard_text
             .replace("(AoC++)", &"(AoC++)".color(GOLD).to_string())
@@ -459,7 +465,6 @@ impl AocClient {
                 &"(Sponsor)".color(Color::BrightBlue).to_string(),
             );
 
-        println!("");
         for line in colored_leaderboard
             .lines()
             .skip_while(|line| !line.is_empty())
@@ -469,30 +474,35 @@ impl AocClient {
             println!("{}", line);
         }
 
+        let rank_re = Regex::new(
+            r"\s*(?P<rank>[0-9]+)\)\s*(?P<score>[0-9]+)\s*(?P<name>.+)",
+        )
+        .unwrap();
+        let no_rank_re =
+            Regex::new(r"\s*(?P<score>[0-9]+)\s*(?P<name>.+)").unwrap();
+
         for line in colored_leaderboard
             .lines()
             .skip_while(|line| !line.is_empty())
             .skip(1)
-            .skip_while(|line| !line.contains(")"))
+            .skip_while(|line| !line.contains(')'))
         {
             if line.is_empty() {
                 continue;
             }
-            let split: Vec<&str> = line.split_whitespace().collect();
-            let (rank, info) = line.split_once(" ").unwrap();
-            // normal case, entry has its own unique ranking
-            if rank.contains(")") {
+            if let Some(rank_caps) = rank_re.captures(line) {
                 // The longest ranking is "100)", want every other ranking to
                 // line up it's ")" with the ) in "100)"
-                let padding = " ".repeat(MAX_RANK_LEN - split[0].len());
-                println!("{}{} {}", padding, rank, info);
-            } else {
-                // in this corner case, two or more entries share the same
-                // raking, but the rank # is only given to the first entry. Under
-                // these conditions, 'rank' holds the users's score and 'info' holds
-                // the user's remaining info (e.g. name, AoC++, etc)
-                let padding = " ".repeat(MAX_RANK_LEN);
-                println!("{} {} {}", padding, rank, info);
+                let rank_len = rank_caps
+                    .name("rank")
+                    .ok_or(AocError::AocResponseError)?
+                    .as_str()
+                    .len();
+                let padding = " ".repeat(MAX_RANK_LEN - rank_len);
+                println!("{}{}", padding, line);
+            } else if let Some(_no_rank_caps) = no_rank_re.captures(line) {
+                let padding = " ".repeat(MAX_RANK_LEN + 1); // + 1 for ")"
+                println!("{} {}", padding, line);
             }
         }
 
