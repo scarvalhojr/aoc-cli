@@ -27,6 +27,7 @@ fn main() {
                 AocError::SessionFileNotFound => NO_INPUT,
                 AocError::SessionFileReadError { .. } => IO_ERROR,
                 AocError::InvalidSessionCookie { .. } => DATA_ERROR,
+                AocError::NotLoggedIn => DATA_ERROR,
                 AocError::HttpRequestError { .. } => FAILURE,
                 AocError::AocResponseError => FAILURE,
                 AocError::PrivateLeaderboardNotAvailable => FAILURE,

@@ -100,6 +100,9 @@ pub enum AocError {
     #[error("Invalid session cookie")]
     InvalidSessionCookie,
 
+    #[error("Not logged in")]
+    NotLoggedIn,
+
     #[error("HTTP request error: {0}")]
     HttpRequestError(#[from] reqwest::Error),
 
@@ -440,10 +443,7 @@ impl AocClient {
         } else if response.status() == StatusCode::FOUND {
             // A 302 reponse is a redirect and it likely
             // means we're not logged in
-            warn!(
-                "🍪 It looks like you are not logged in, try logging in again"
-            );
-            return Err(AocError::AocResponseError);
+            return Err(AocError::NotLoggedIn);
         }
 
         let contents = response.error_for_status()?.text()?;
@@ -467,24 +467,35 @@ impl AocClient {
         // print explanatory paragraph before recoloring the text
         for line in stats_text.lines().take_while(|line| !line.is_empty()) {
             println!("{}", line);
+            if line.eq("You haven't collected any stars... yet.") {
+                return Ok(());
+            }
         }
 
+        let caps =
+            Regex::new(r"(?<Part1>-+Part \d+-+)([ ]+)(?<Part2>-+Part \d+-+)")
+                .unwrap()
+                .captures(&stats_text)
+                .ok_or(AocError::AocResponseError)?;
+
+        let part_1_str = caps
+            .name("Part1")
+            .ok_or(AocError::AocResponseError)?
+            .as_str();
+        let part_2_str = caps
+            .name("Part2")
+            .ok_or(AocError::AocResponseError)?
+            .as_str();
+
         let stats_text = stats_text
-            .replace(
-                "--------Part 1---------",
-                &"--------Part 1---------".color(SILVER).to_string(),
-            )
-            .replace(
-                "--------Part 2---------",
-                &"--------Part 2---------".color(GOLD).to_string(),
-            )
+            .replace(part_1_str, &part_1_str.color(SILVER).to_string())
+            .replace(part_2_str, &part_2_str.color(GOLD).to_string())
             .replace("Time", &"Time".color(GOLD).to_string())
             .replace("Rank", &"Rank".color(GOLD).to_string())
             .replace("Score", &"Score".color(GOLD).to_string())
             .replacen("Time", &"Time".color(SILVER).to_string(), 1)
-            .replacen("Rank", &"Rank".color(SILVER).to_string(), 2) // "Rank" also in explanation
-            .replacen("Score", &"Score".color(SILVER).to_string(), 2); // "Score" also in
-                                                                       // explanation
+            .replacen("Rank", &"Rank".color(SILVER).to_string(), 2)
+            .replacen("Score", &"Score".color(SILVER).to_string(), 2);
 
         // just print out the day by day stats, expalanatory paragraph is recolored now
         for line in stats_text.lines().skip_while(|line| !line.is_empty()) {
