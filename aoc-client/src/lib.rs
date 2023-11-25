@@ -424,6 +424,94 @@ impl AocClient {
         Ok(())
     }
 
+    fn get_global_leaderboard_html(&self) -> AocResult<String> {
+        debug!("🦌 Fetching global leaderboard for {}", self.year);
+
+        let url = format!("https://adventofcode.com/{}/leaderboard", self.year);
+        let response = http_client(&self.session_cookie, "text/html")?
+            .get(url)
+            .send()?;
+        if response.status() == StatusCode::NOT_FOUND {
+            // A 404 reponse means the leaderboard for
+            // the requested year is not yet available
+            return Err(AocError::InvalidEventYear(self.year));
+        }
+        let contents = response.error_for_status()?.text()?;
+
+        let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+            .unwrap()
+            .captures(&contents)
+            .ok_or(AocError::AocResponseError)?
+            .name("main")
+            .unwrap()
+            .as_str()
+            .to_string();
+
+        Ok(main)
+    }
+
+    pub fn show_global_leaderboard(&self) -> AocResult<()> {
+        let leaderboard_html = self.get_global_leaderboard_html()?;
+        let leadboard_text = self.html2text(&leaderboard_html);
+        const MAX_RANK_LEN: usize = 3; //"100"
+
+        let empty_str = "Nothing to show on the leaderboard... yet.";
+        if leadboard_text.contains(empty_str) {
+            println!("{}", empty_str);
+            return Ok(());
+        }
+
+        let colored_leaderboard = leadboard_text
+            .replace("(AoC++)", &"(AoC++)".color(GOLD).to_string())
+            .replace(
+                "(Sponsor)",
+                &"(Sponsor)".color(Color::BrightBlue).to_string(),
+            );
+
+        for line in colored_leaderboard
+            .lines()
+            .skip_while(|line| !line.is_empty())
+            .skip(1)
+            .take_while(|line| !line.starts_with("You"))
+        {
+            println!("{}", line);
+        }
+
+        let rank_re = Regex::new(
+            r"\s*(?P<rank>[0-9]+)\)\s*(?P<score>[0-9]+)\s*(?P<name>.+)",
+        )
+        .unwrap();
+        let no_rank_re =
+            Regex::new(r"\s*(?P<score>[0-9]+)\s*(?P<name>.+)").unwrap();
+
+        for line in colored_leaderboard
+            .lines()
+            .skip_while(|line| !line.is_empty())
+            .skip(1)
+            .skip_while(|line| !line.contains(')'))
+        {
+            if line.is_empty() {
+                continue;
+            }
+            if let Some(rank_caps) = rank_re.captures(line) {
+                // The longest ranking is "100)", want every other ranking to
+                // line up it's ")" with the ) in "100)"
+                let rank_len = rank_caps
+                    .name("rank")
+                    .ok_or(AocError::AocResponseError)?
+                    .as_str()
+                    .len();
+                let padding = " ".repeat(MAX_RANK_LEN - rank_len);
+                println!("{}{}", padding, line);
+            } else if let Some(_no_rank_caps) = no_rank_re.captures(line) {
+                let padding = " ".repeat(MAX_RANK_LEN + 1); // + 1 for ")"
+                println!("{} {}", padding, line);
+            }
+        }
+
+        Ok(())
+    }
+
     fn get_private_leaderboard(
         &self,
         leaderboard_id: LeaderboardId,
