@@ -27,6 +27,7 @@ fn main() {
                 AocError::SessionFileNotFound => NO_INPUT,
                 AocError::SessionFileReadError { .. } => IO_ERROR,
                 AocError::InvalidSessionCookie { .. } => DATA_ERROR,
+                AocError::NotLoggedIn => DATA_ERROR,
                 AocError::HttpRequestError { .. } => FAILURE,
                 AocError::AocResponseError => FAILURE,
                 AocError::PrivateLeaderboardNotAvailable => FAILURE,
@@ -103,6 +104,7 @@ fn run(args: &Args, client: AocClient) -> AocResult<()> {
             }
             Ok(())
         }
+        Some(Command::PersonalStats) => client.show_personal_stats(),
         Some(Command::Submit { part, answer }) => {
             client.submit_answer_and_show_outcome(part, answer)
         }

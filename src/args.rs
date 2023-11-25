@@ -108,4 +108,8 @@ pub enum Command {
         /// Private leaderboard ID
         leaderboard_id: LeaderboardId,
     },
+
+    /// Show personal stats
+    #[command(visible_alias = "pe")]
+    PersonalStats,
 }
