@@ -83,6 +83,10 @@ pub enum Command {
     #[command(visible_alias = "c")]
     Calendar,
 
+    /// Show Advent of Code event stats
+    #[command(visible_alias = "e")]
+    EventStats,
+
     /// Save puzzle description and input to files
     #[command(visible_alias = "d")]
     Download,

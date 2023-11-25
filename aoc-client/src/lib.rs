@@ -15,13 +15,13 @@ use reqwest::header::{
 };
 use reqwest::redirect::Policy;
 use serde::Deserialize;
-use std::cmp::{Ordering, Reverse};
+use std::cmp::{self, Ordering, Reverse};
 use std::collections::HashMap;
-use std::env;
 use std::fmt::{Display, Formatter};
 use std::fs::{read_to_string, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::{env, u64};
 use thiserror::Error;
 
 pub type PuzzleYear = i32;
@@ -421,6 +421,100 @@ impl AocClient {
             TrivialDecorator::new(),
         );
         println!("\n{calendar_text}");
+        Ok(())
+    }
+
+    fn get_event_stats_html(&self) -> AocResult<String> {
+        debug!("🦌 Fetching event stats for {}", self.year);
+        let url = format!("https://adventofcode.com/{}/stats", self.year);
+
+        let response = http_client(&self.session_cookie, "text/html")?
+            .get(url)
+            .send()?;
+        if response.status() == StatusCode::NOT_FOUND {
+            // A 404 reponse means the stats for
+            // the requested year are not yet available
+            return Err(AocError::InvalidEventYear(self.year));
+        }
+        let contents = response.error_for_status()?.text()?;
+
+        let main = Regex::new(r"(?i)(?s)<main>(?P<main>.*)</main>")
+            .unwrap()
+            .captures(&contents)
+            .ok_or(AocError::AocResponseError)?
+            .name("main")
+            .unwrap()
+            .as_str()
+            .to_string();
+
+        Ok(main)
+    }
+
+    pub fn show_event_stats(&self) -> AocResult<()> {
+        let stats_html = self.get_event_stats_html()?;
+
+        let stats_text = from_read_with_decorator(
+            stats_html.as_bytes(),
+            self.output_width,
+            TrivialDecorator::new(),
+        );
+
+        // number of completions loosely associated with each star
+        let star_val = Regex::new(r"represents up to (?<numbers>[0-9]+) users")
+            .unwrap()
+            .captures(&stats_text)
+            .ok_or(AocError::AocResponseError)?
+            .name("numbers")
+            .unwrap()
+            .as_str()
+            .parse::<u32>()
+            .or(Err(AocError::AocResponseError))?;
+
+        // add color to appropriate text in explanatory sentence
+        let stats_colored = stats_text
+            .replace("Gold", &"Gold".color(GOLD).to_string())
+            .replace("silver", &"silver".color(SILVER).to_string())
+            .replacen('*', &"*".color(SILVER).to_string(), 2)
+            .replacen('*', &"*".color(GOLD).to_string(), 1);
+
+        println!();
+        for line in stats_colored.lines().take_while(|line| !line.is_empty()) {
+            println!("{}", line);
+        }
+
+        let day_re = Regex::new(
+            r"(?<day>[0-9]+)([ ]+)(?<n_gold>[0-9]+)([ ]+)(?<n_silver>[0-9]+)([ ]+)(?<stars>[*]+)",
+        )
+        .unwrap();
+
+        for line in stats_colored.lines().skip_while(|line| !line.is_empty()) {
+            if line.is_empty() {
+                continue;
+            }
+            let caps =
+                day_re.captures(line).ok_or(AocError::AocResponseError)?;
+
+            let n_gold_str = caps.name("n_gold").unwrap().as_str().to_string();
+            let gold_comps = n_gold_str
+                .parse::<u32>()
+                .or(Err(AocError::AocResponseError))?;
+            let n_silver_str =
+                caps.name("n_silver").unwrap().as_str().to_string();
+
+            let n_stars = caps.name("stars").unwrap().as_str().len();
+
+            let gold_prop: f64 = gold_comps as f64 / star_val as f64;
+            let gold_stars = cmp::min(n_stars - 1, gold_prop.ceil() as usize);
+
+            let tmp = &line
+                .replace(&n_gold_str, &n_gold_str.color(GOLD).to_string())
+                .replace(&n_silver_str, &n_silver_str.color(SILVER).to_string())
+                .replace('*', &"*".color(SILVER).to_string())
+                .replacen('*', &"*".color(GOLD).to_string(), gold_stars);
+
+            println!("{}", tmp);
+        }
+
         Ok(())
     }
 
