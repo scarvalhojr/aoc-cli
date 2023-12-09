@@ -2,8 +2,9 @@ use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
 use colored::{Color, Colorize};
 use dirs::{config_dir, home_dir};
 use html2md::parse_html;
+use html2text::render::text_renderer::RichAnnotation;
 use html2text::{
-    from_read, from_read_with_decorator,
+    from_read, from_read_with_decorator, from_read_coloured,
     render::text_renderer::TrivialDecorator,
 };
 use http::StatusCode;
@@ -413,13 +414,25 @@ impl AocClient {
         Ok(calendar)
     }
 
+    fn colour_map(anns: &[RichAnnotation], s: &str) -> String {
+        for ann in anns.iter().rev() {
+            match ann {
+                RichAnnotation::Colour(c) => {
+                    return s.truecolor(c.r, c.g, c.b).to_string();
+                }
+                _ => {}
+            }
+        }
+        s.into()
+    }
+
     pub fn show_calendar(&self) -> AocResult<()> {
         let calendar_html = self.get_calendar_html()?;
-        let calendar_text = from_read_with_decorator(
+        let calendar_text = from_read_coloured(
             calendar_html.as_bytes(),
             self.output_width,
-            TrivialDecorator::new(),
-        );
+            AocClient::colour_map
+        ).unwrap();
         println!("\n{calendar_text}");
         Ok(())
     }
