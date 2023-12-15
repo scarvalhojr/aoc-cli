@@ -137,6 +137,7 @@ pub struct AocClient {
     input_filename: PathBuf,
     puzzle_filename: PathBuf,
     show_html_markup: bool,
+    show_calendar_colour: bool,
 }
 
 #[must_use]
@@ -149,6 +150,7 @@ pub struct AocClientBuilder {
     input_filename: PathBuf,
     puzzle_filename: PathBuf,
     show_html_markup: bool,
+    show_calendar_colour: bool,
 }
 
 impl AocClient {
@@ -428,11 +430,19 @@ impl AocClient {
 
     pub fn show_calendar(&self) -> AocResult<()> {
         let calendar_html = self.get_calendar_html()?;
-        let calendar_text = from_read_coloured(
-            calendar_html.as_bytes(),
-            self.output_width,
-            AocClient::colour_map
-        ).unwrap();
+        let calendar_text = if self.show_calendar_colour {
+            from_read_coloured(
+                calendar_html.as_bytes(),
+                self.output_width,
+                AocClient::colour_map
+            ).unwrap()
+        } else {
+            from_read_with_decorator(
+                calendar_html.as_bytes(),
+                self.output_width,
+                TrivialDecorator::new(),
+            )
+        };
         println!("\n{calendar_text}");
         Ok(())
     }
@@ -551,6 +561,7 @@ impl Default for AocClientBuilder {
         let input_filename = "input".into();
         let puzzle_filename = "puzzle.md".into();
         let show_html_markup = false;
+        let show_calendar_colour = true;
 
         Self {
             session_cookie,
@@ -561,6 +572,7 @@ impl Default for AocClientBuilder {
             input_filename,
             puzzle_filename,
             show_html_markup,
+            show_calendar_colour,
         }
     }
 }
@@ -599,6 +611,7 @@ impl AocClientBuilder {
             input_filename: self.input_filename.clone(),
             puzzle_filename: self.puzzle_filename.clone(),
             show_html_markup: self.show_html_markup,
+            show_calendar_colour: self.show_calendar_colour,
         })
     }
 
@@ -751,6 +764,11 @@ impl AocClientBuilder {
 
     pub fn show_html_markup(&mut self, show: bool) -> &mut Self {
         self.show_html_markup = show;
+        self
+    }
+
+    pub fn show_calendar_colour(&mut self, show: bool) -> &mut Self {
+        self.show_calendar_colour = show;
         self
     }
 }

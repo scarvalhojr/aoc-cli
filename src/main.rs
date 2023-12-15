@@ -88,6 +88,7 @@ fn build_client(args: &Args) -> AocResult<AocClient> {
         .puzzle_filename(&args.puzzle_file)
         .overwrite_files(args.overwrite)
         .show_html_markup(args.show_html_markup)
+        .show_calendar_colour(!args.no_calendar_colour)
         .build()
 }
 
