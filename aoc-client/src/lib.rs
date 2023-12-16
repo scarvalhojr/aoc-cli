@@ -4,7 +4,7 @@ use dirs::{config_dir, home_dir};
 use html2md::parse_html;
 use html2text::render::text_renderer::RichAnnotation;
 use html2text::{
-    from_read, from_read_with_decorator, from_read_coloured,
+    from_read, from_read_with_decorator,
     render::text_renderer::TrivialDecorator,
 };
 use http::StatusCode;
@@ -431,11 +431,15 @@ impl AocClient {
     pub fn show_calendar(&self) -> AocResult<()> {
         let calendar_html = self.get_calendar_html()?;
         let calendar_text = if self.show_calendar_colour {
-            from_read_coloured(
-                calendar_html.as_bytes(),
-                self.output_width,
-                AocClient::colour_map
-            ).unwrap()
+            html2text::config::rich()
+                // The 2023 calendar has some lava animation using.
+                // position:absolute spans.  Hide them here.
+                .add_css(".lavafall { display: none; }")
+                .coloured(
+                    calendar_html.as_bytes(),
+                    self.output_width,
+                    AocClient::colour_map
+                    ).unwrap()
         } else {
             from_read_with_decorator(
                 calendar_html.as_bytes(),

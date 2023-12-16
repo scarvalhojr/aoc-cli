@@ -732,9 +732,9 @@ dependencies = [
 
 [[package]]
 name = "html2text"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dab6ff4ac7bfa756d09865c004abf44d4f1f5d80d15902cd714c00ae1bf9cc4"
+checksum = "ea531de2b97971f4e6eb5c065bb5d8ec4d9260d4935b79d447f4885839ed6a82"
 dependencies = [
  "html5ever",
  "lightningcss",
