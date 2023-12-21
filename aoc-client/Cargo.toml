@@ -14,7 +14,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 colored = "2.0.0"
 dirs = "4.0"
 html2md = "0.2"
-html2text = { version = "0.7.1", features = ["css"] }
+html2text = { version = "0.8.0", features = ["css"] }
 http = "0.2"
 log = "0.4"
 regex = "1.7"

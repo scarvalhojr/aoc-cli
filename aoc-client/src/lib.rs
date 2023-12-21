@@ -429,23 +429,27 @@ impl AocClient {
     }
 
     pub fn show_calendar(&self) -> AocResult<()> {
+        const AOC_CALENDAR_CSS_WORKAROUND: &'static str = "
+                    .calendar > * > span > span { display: none; }";
         let calendar_html = self.get_calendar_html()?;
         let calendar_text = if self.show_calendar_colour {
             html2text::config::rich()
                 // The 2023 calendar has some lava animation using.
                 // position:absolute spans.  Hide them here.
-                .add_css(".lavafall { display: none; }")
+                .use_doc_css()
+                .add_css(AOC_CALENDAR_CSS_WORKAROUND)
                 .coloured(
                     calendar_html.as_bytes(),
                     self.output_width,
                     AocClient::colour_map
                     ).unwrap()
         } else {
-            from_read_with_decorator(
-                calendar_html.as_bytes(),
-                self.output_width,
-                TrivialDecorator::new(),
-            )
+            html2text::config::with_decorator(TrivialDecorator::new())
+                .add_css(AOC_CALENDAR_CSS_WORKAROUND)
+                .string_from_read(
+                    calendar_html.as_bytes(),
+                    self.output_width
+                    ).unwrap()
         };
         println!("\n{calendar_text}");
         Ok(())
