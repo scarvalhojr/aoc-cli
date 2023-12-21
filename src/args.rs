@@ -68,6 +68,10 @@ pub struct Args {
     #[arg(short = 'm', long, global = true)]
     pub show_html_markup: bool,
 
+    /// Don't show calendar colours
+    #[arg(short = 'n', long, global = true)]
+    pub no_calendar_colour: bool,
+
     /// Restrict log messages to errors only
     #[arg(short, long, global = true)]
     pub quiet: bool,

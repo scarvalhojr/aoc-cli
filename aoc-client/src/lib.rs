@@ -2,6 +2,7 @@ use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, TimeZone, Utc};
 use colored::{Color, Colorize};
 use dirs::{config_dir, home_dir};
 use html2md::parse_html;
+use html2text::render::text_renderer::RichAnnotation;
 use html2text::{
     from_read, from_read_with_decorator,
     render::text_renderer::TrivialDecorator,
@@ -136,6 +137,7 @@ pub struct AocClient {
     input_filename: PathBuf,
     puzzle_filename: PathBuf,
     show_html_markup: bool,
+    show_calendar_colour: bool,
 }
 
 #[must_use]
@@ -148,6 +150,7 @@ pub struct AocClientBuilder {
     input_filename: PathBuf,
     puzzle_filename: PathBuf,
     show_html_markup: bool,
+    show_calendar_colour: bool,
 }
 
 impl AocClient {
@@ -413,13 +416,41 @@ impl AocClient {
         Ok(calendar)
     }
 
+    fn colour_map(anns: &[RichAnnotation], s: &str) -> String {
+        for ann in anns.iter().rev() {
+            match ann {
+                RichAnnotation::Colour(c) => {
+                    return s.truecolor(c.r, c.g, c.b).to_string();
+                }
+                _ => {}
+            }
+        }
+        s.into()
+    }
+
     pub fn show_calendar(&self) -> AocResult<()> {
+        const AOC_CALENDAR_CSS_WORKAROUND: &'static str = "
+                    .calendar > * > span > span { display: none; }";
         let calendar_html = self.get_calendar_html()?;
-        let calendar_text = from_read_with_decorator(
-            calendar_html.as_bytes(),
-            self.output_width,
-            TrivialDecorator::new(),
-        );
+        let calendar_text = if self.show_calendar_colour {
+            html2text::config::rich()
+                // The 2023 calendar has some lava animation using.
+                // position:absolute spans.  Hide them here.
+                .use_doc_css()
+                .add_css(AOC_CALENDAR_CSS_WORKAROUND)
+                .coloured(
+                    calendar_html.as_bytes(),
+                    self.output_width,
+                    AocClient::colour_map
+                    ).unwrap()
+        } else {
+            html2text::config::with_decorator(TrivialDecorator::new())
+                .add_css(AOC_CALENDAR_CSS_WORKAROUND)
+                .string_from_read(
+                    calendar_html.as_bytes(),
+                    self.output_width
+                    ).unwrap()
+        };
         println!("\n{calendar_text}");
         Ok(())
     }
@@ -538,6 +569,7 @@ impl Default for AocClientBuilder {
         let input_filename = "input".into();
         let puzzle_filename = "puzzle.md".into();
         let show_html_markup = false;
+        let show_calendar_colour = true;
 
         Self {
             session_cookie,
@@ -548,6 +580,7 @@ impl Default for AocClientBuilder {
             input_filename,
             puzzle_filename,
             show_html_markup,
+            show_calendar_colour,
         }
     }
 }
@@ -586,6 +619,7 @@ impl AocClientBuilder {
             input_filename: self.input_filename.clone(),
             puzzle_filename: self.puzzle_filename.clone(),
             show_html_markup: self.show_html_markup,
+            show_calendar_colour: self.show_calendar_colour,
         })
     }
 
@@ -738,6 +772,11 @@ impl AocClientBuilder {
 
     pub fn show_html_markup(&mut self, show: bool) -> &mut Self {
         self.show_html_markup = show;
+        self
+    }
+
+    pub fn show_calendar_colour(&mut self, show: bool) -> &mut Self {
+        self.show_calendar_colour = show;
         self
     }
 }
