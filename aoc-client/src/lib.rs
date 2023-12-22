@@ -368,9 +368,10 @@ impl AocClient {
             // Remove 2019 shadows
             r#"|(<span style="color[^>]*position:absolute"#,
             r#"[^>]*>\.</span>)"#,
-            // Remove 2019 "sunbeam"
-            r#"|(<span class="sunbeam"[^>]*>"#,
-            r#"<span style="animation-delay[^>]*>\*</span></span>)"#,
+            // Remove 2019 and 2023 animations
+            r#"|(<span [^>]*>"#,
+            r#"(<span [^>]*style="[^>]*animation-delay[^>]*>[^>]*</span>)+"#,
+            r#"</span>)"#,
         ))
         .unwrap()
         .replace_all(&main, "")
