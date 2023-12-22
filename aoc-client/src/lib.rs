@@ -398,12 +398,13 @@ impl AocClient {
 
                 let stars =
                     if class.contains("calendar-verycomplete") || all_stars {
-                        "**"
+                        "**".color(GOLD)
                     } else if class.contains("calendar-complete") {
-                        "*"
+                        "*".color(GOLD)
                     } else {
-                        ""
-                    };
+                        "".normal()
+                    }
+                    .to_string();
 
                 star_regex.replace(line, stars)
             })
@@ -413,13 +414,48 @@ impl AocClient {
         Ok(calendar)
     }
 
+    fn replace_calendar_colors(html: String) -> String {
+        Regex::new(
+            r#".calendar .(calendar-color-[^ ]+) \{ color:#([0-9a-f]{6})"#,
+        )
+        .unwrap()
+        .captures_iter(&html)
+        .filter_map(|capture| {
+            let (_, [class, rgb]) = capture.extract();
+            [&rgb[0..2], &rgb[2..4], &rgb[4..6]]
+                .into_iter()
+                .map(|x| u8::from_str_radix(x, 16).ok())
+                .collect::<Option<Vec<_>>>()
+                .map(|v| {
+                    (
+                        class,
+                        Color::TrueColor {
+                            r: v[0],
+                            g: v[1],
+                            b: v[2],
+                        },
+                    )
+                })
+        })
+        .fold(html.clone(), |acc, (class_name, color)| {
+            Regex::new(&format!(
+                r#"(<span class="{}">)([^<]*)(</span>)"#,
+                class_name
+            ))
+            .map(|regex| {
+                regex
+                    .replace_all(&acc, format!("$1{}$3", "$2".color(color)))
+                    .to_string()
+            })
+            .unwrap_or(acc)
+        })
+    }
+
     pub fn show_calendar(&self) -> AocResult<()> {
         let calendar_html = self.get_calendar_html()?;
-        let calendar_text = from_read_with_decorator(
-            calendar_html.as_bytes(),
-            self.output_width,
-            TrivialDecorator::new(),
-        );
+        let colorful_calendar_html =
+            Self::replace_calendar_colors(calendar_html);
+        let calendar_text = Self::html2text_colorful(colorful_calendar_html);
         println!("\n{calendar_text}");
         Ok(())
     }
@@ -523,6 +559,28 @@ impl AocClient {
                 TrivialDecorator::new(),
             )
         }
+    }
+
+    fn html2text_colorful(html: String) -> String {
+        let mut s = String::new();
+
+        // Resolves the problem of "Got character: '\u{1b}'" in html2text
+        Regex::new(r#"(?s)([^\u{1b}]*)(\u{1b}|$)"#)
+            .unwrap()
+            .captures_iter(&html)
+            .for_each(|capture| {
+                let (_, [left, right]) = capture.extract();
+                let left = from_read_with_decorator(
+                    format!("<pre>{}</br></pre>", &left).as_bytes(),
+                    120,
+                    TrivialDecorator::new(),
+                );
+
+                s += left.strip_suffix("\n").unwrap_or(&left);
+                s += right;
+            });
+
+        s
     }
 }
 
