@@ -368,9 +368,10 @@ impl AocClient {
             // Remove 2019 shadows
             r#"|(<span style="color[^>]*position:absolute"#,
             r#"[^>]*>\.</span>)"#,
-            // Remove 2019 "sunbeam"
-            r#"|(<span class="sunbeam"[^>]*>"#,
-            r#"<span style="animation-delay[^>]*>\*</span></span>)"#,
+            // Remove 2019 and 2023 animations
+            r#"|(<span [^>]*>"#,
+            r#"(<span [^>]*style="[^>]*animation-delay[^>]*>[^>]*</span>)+"#,
+            r#"</span>)"#,
         ))
         .unwrap()
         .replace_all(&main, "")
@@ -384,28 +385,28 @@ impl AocClient {
         ))
         .unwrap();
 
-        let all_stars = main.contains("calendar calendar-perfect");
-
         // Remove stars that have not been collected
+        let mut star_state = "";
+
         let calendar = cleaned_up
             .lines()
             .map(|line| {
                 let class = class_regex
                     .captures(line)
                     .and_then(|c| c.name("class"))
-                    .map(|c| c.as_str())
-                    .unwrap_or("");
+                    .map(|c| c.as_str());
 
-                let stars =
-                    if class.contains("calendar-verycomplete") || all_stars {
+                if let Some(class) = class {
+                    star_state = if class.contains("calendar-verycomplete") {
                         "**"
                     } else if class.contains("calendar-complete") {
                         "*"
                     } else {
                         ""
                     };
+                }
 
-                star_regex.replace(line, stars)
+                star_regex.replace(line, star_state)
             })
             .collect::<Vec<_>>()
             .join("\n");
